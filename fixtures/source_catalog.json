@@ -1,72 +1,1664 @@
 {
   "sources": [
-    {"name": "Athens Voice", "canonical_domain": "www.athensvoice.gr", "feed_url": "https://www.athensvoice.gr/rss/echobox/", "organization": "Athens Voice", "target_region": "attica", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised echobox RSS 200 parsed; robots allowed; sampled items on same host; regional scope unproven"},
-    {"name": "iRafina", "canonical_domain": "www.irafina.gr", "feed_url": "https://www.irafina.gr/feed/", "organization": "iRafina", "target_region": "attica", "locality_hint": "Rafina", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Notia", "canonical_domain": "www.notia.gr", "feed_url": "https://www.notia.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Notia", "target_region": "attica", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; no ingestable feed verified"},
-    {"name": "Voria", "canonical_domain": "www.voria.gr", "feed_url": "https://www.voria.gr/rss-feed", "organization": "Voria", "target_region": "central_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Thestival", "canonical_domain": "www.thestival.gr", "feed_url": "https://www.thestival.gr/eidiseis/feed/", "organization": "Thestival", "target_region": "central_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "eMakedonia", "canonical_domain": "www.emakedonia.gr", "feed_url": "https://www.emakedonia.gr/feed", "organization": "eMakedonia", "target_region": "central_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "TyposThes", "canonical_domain": "www.typosthes.gr", "feed_url": "https://www.typosthes.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "TyposThes", "target_region": "central_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; no ingestable feed verified"},
-    {"name": "Kozan.gr", "canonical_domain": "kozan.gr", "feed_url": "https://kozan.gr/feed/", "organization": "Kozan.gr", "target_region": "west_macedonia", "locality_hint": "Perdikkas", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "KozaniLife", "canonical_domain": "www.kozanilife.gr", "feed_url": "https://www.kozanilife.gr/feed/", "organization": "KozaniLife", "target_region": "west_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Prologos Kozani", "canonical_domain": "www.prlogos.gr", "feed_url": "https://www.prlogos.gr/feed/", "organization": "Prologos", "target_region": "west_macedonia", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Xronos Komotinis", "canonical_domain": "xronos.gr", "feed_url": "https://xronos.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Xronos", "target_region": "east_macedonia_thrace", "locality_hint": "Komotini and Rodopi", "rights_status": "restricted", "endpoint_note": "2026-10-08 UTC: homepage 200; publisher terms require written permission; no feed adapter"},
-    {"name": "Evros News", "canonical_domain": "www.evros-news.gr", "feed_url": "https://www.evros-news.gr/feed/", "organization": "Evros News", "target_region": "east_macedonia_thrace", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Thrakinea", "canonical_domain": "www.thrakinea.gr", "feed_url": "https://www.thrakinea.gr/feed", "organization": "Thrakinea", "target_region": "east_macedonia_thrace", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Proini Kavala", "canonical_domain": "www.proininews.gr", "feed_url": "https://www.proininews.gr/feed/", "organization": "Proini Kavala", "target_region": "east_macedonia_thrace", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "EpirusPost", "canonical_domain": "www.epiruspost.gr", "feed_url": "https://www.epiruspost.gr/feed/", "organization": "EpirusPost", "target_region": "epirus", "locality_hint": "Konitsa", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Ipeirotikos Agon", "canonical_domain": "www.agon.gr", "feed_url": "https://www.agon.gr/feed/", "organization": "Ipeirotikos Agon", "target_region": "epirus", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Larissanet", "canonical_domain": "www.larissanet.gr", "feed_url": "https://www.larissanet.gr/feed/", "organization": "Larissanet", "target_region": "thessaly", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "OnLarissa", "canonical_domain": "www.onlarissa.gr", "feed_url": "https://www.onlarissa.gr/feed/", "organization": "OnLarissa", "target_region": "thessaly", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Enimerosi Corfu", "canonical_domain": "enimerosi.com", "feed_url": "https://enimerosi.com/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Enimerosi", "target_region": "ionian_islands", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"},
-    {"name": "Corfu Press", "canonical_domain": "www.corfupress.com", "feed_url": "https://www.corfupress.com/feed/", "organization": "Corfu Press", "target_region": "ionian_islands", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Kefalonia Press", "canonical_domain": "www.kefaloniapress.gr", "feed_url": "https://www.kefaloniapress.gr/feed/", "organization": "Kefalonia Press", "target_region": "ionian_islands", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "TheBest Patras", "canonical_domain": "www.thebest.gr", "feed_url": "https://www.thebest.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "TheBest", "target_region": "west_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; advertised /feed returned non-feed; no verified adapter"},
-    {"name": "Pelop", "canonical_domain": "pelop.gr", "feed_url": "https://pelop.gr/feed/gn", "organization": "Pelop", "target_region": "west_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Agrinio News", "canonical_domain": "www.agrinionews.gr", "feed_url": "https://www.agrinionews.gr/feed/", "organization": "Agrinio News", "target_region": "west_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Patris News", "canonical_domain": "www.patrisnews.com", "feed_url": "https://www.patrisnews.com/feed/", "organization": "Patris News", "target_region": "west_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Agrinio Times", "canonical_domain": "www.agriniotimes.gr", "feed_url": "https://www.agriniotimes.gr/feed/", "organization": "Agrinio Times", "target_region": "west_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "LamiaReport", "canonical_domain": "www.lamiareport.gr", "feed_url": "https://www.lamiareport.gr/feed/", "organization": "LamiaReport", "target_region": "central_greece", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "EviaZoom", "canonical_domain": "www.eviazoom.gr", "feed_url": "https://www.eviazoom.gr/feeds/posts/default?alt=rss", "organization": "EviaZoom", "target_region": "central_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Evima", "canonical_domain": "www.evima.gr", "feed_url": "https://www.evima.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Evima", "target_region": "central_greece", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; no ingestable feed verified"},
-    {"name": "ArcadiaPortal", "canonical_domain": "www.arcadiaportal.gr", "feed_url": "https://www.arcadiaportal.gr/rss.xml", "organization": "ArcadiaPortal", "target_region": "peloponnese", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS advertised; 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Anagnostis", "canonical_domain": "www.anagnostis.org", "feed_url": "https://www.anagnostis.org/feed/", "organization": "Anagnostis", "target_region": "peloponnese", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Sto Nisi", "canonical_domain": "www.stonisi.gr", "feed_url": "https://www.stonisi.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Sto Nisi", "target_region": "north_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"},
-    {"name": "Samos Today", "canonical_domain": "samostoday.gr", "feed_url": "https://samostoday.gr/feed/", "organization": "Samos Today", "target_region": "north_aegean", "locality_hint": "Samos, Ikaria and Fournoi", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Politis Chios", "canonical_domain": "www.politischios.gr", "feed_url": "https://www.politischios.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Politis Chios", "target_region": "north_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; no ingestable feed verified"},
-    {"name": "Empros Lesvos", "canonical_domain": "www.emprosnet.gr", "feed_url": "https://www.emprosnet.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Empros Lesvos", "target_region": "north_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; no ingestable feed verified"},
-    {"name": "Rodiaki", "canonical_domain": "www.rodiaki.gr", "feed_url": "https://www.rodiaki.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Rodiaki", "target_region": "south_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"},
-    {"name": "Parianos Typos", "canonical_domain": "parianostypos.gr", "feed_url": "https://parianostypos.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Parianos Typos", "target_region": "south_aegean", "locality_hint": "Paros and Antiparos", "rights_status": "restricted", "endpoint_note": "2026-10-08 UTC: homepage 200; publisher prohibits republication; no feed adapter"},
-    {"name": "Dimokratiki Rhodes", "canonical_domain": "www.dimokratiki.gr", "feed_url": "https://www.dimokratiki.gr/feed/", "organization": "Dimokratiki", "target_region": "south_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Syros Today", "canonical_domain": "www.syrostoday.gr", "feed_url": "https://www.syrostoday.gr/rss/News.aspx", "organization": "Syros Today", "target_region": "south_aegean", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "CretaLive", "canonical_domain": "www.cretalive.gr", "feed_url": "https://www.cretalive.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "CretaLive", "target_region": "crete", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"},
-    {"name": "Neakriti", "canonical_domain": "www.neakriti.gr", "feed_url": "https://www.neakriti.gr/rss.xml", "organization": "Neakriti", "target_region": "crete", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Haniotika Nea", "canonical_domain": "www.haniotika-nea.gr", "feed_url": "https://www.haniotika-nea.gr/feed/", "organization": "Haniotika Nea", "target_region": "crete", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Zarpa News", "canonical_domain": "www.zarpanews.gr", "feed_url": "https://www.zarpanews.gr/feed/", "organization": "Zarpa News", "target_region": "crete", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "ERTNews", "canonical_domain": "www.ertnews.gr", "feed_url": "https://www.ertnews.gr/feed/", "organization": "ERTNews", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Naftemporiki", "canonical_domain": "www.naftemporiki.gr", "feed_url": "https://www.naftemporiki.gr/feed/", "organization": "Naftemporiki", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Ta Nea", "canonical_domain": "www.tanea.gr", "feed_url": "https://www.tanea.gr/feed/", "organization": "Ta Nea", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: RSS 200 parsed; robots allowed; sampled items on same host; not advertised on homepage"},
-    {"name": "Skai", "canonical_domain": "www.skai.gr", "feed_url": "https://www.skai.gr/feed.xml", "organization": "Skai", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Proto Thema", "canonical_domain": "www.protothema.gr", "feed_url": "https://www.protothema.gr/rss", "organization": "Proto Thema", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "CNN Greece", "canonical_domain": "www.cnn.gr", "feed_url": "https://www.cnn.gr/eidhseis?format=feed&type=rss", "organization": "CNN Greece", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Newsbeast", "canonical_domain": "www.newsbeast.gr", "feed_url": "https://www.newsbeast.gr/feed/", "organization": "Newsbeast", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: RSS 200 parsed; robots allowed; sampled items on same host; advertised /rss-feed is not RSS"},
-    {"name": "Iefimerida", "canonical_domain": "www.iefimerida.gr", "feed_url": "https://www.iefimerida.gr/rss.xml", "organization": "Iefimerida", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Capital", "canonical_domain": "www.capital.gr", "feed_url": "https://www.capital.gr/api/tags/all/", "organization": "Capital", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "To Vima", "canonical_domain": "www.tovima.gr", "feed_url": "https://www.tovima.gr/feed/", "organization": "To Vima", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: RSS 200 parsed; robots allowed; sampled items on same host; not advertised on homepage"},
-    {"name": "Newsit", "canonical_domain": "www.newsit.gr", "feed_url": "https://www.newsit.gr/feed/", "organization": "Newsit", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Efsyn", "canonical_domain": "www.efsyn.gr", "feed_url": "https://www.efsyn.gr/feed/", "organization": "Efsyn", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Real", "canonical_domain": "www.real.gr", "feed_url": "https://www.real.gr/feed/", "organization": "Real", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Ethnos", "canonical_domain": "www.ethnos.gr", "feed_url": "https://www.ethnos.gr/rss-news?positionid=1", "organization": "Ethnos", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Enikos", "canonical_domain": "www.enikos.gr", "feed_url": "https://www.enikos.gr/feed/", "organization": "Enikos", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "Zougla", "canonical_domain": "www.zougla.gr", "feed_url": "https://www.zougla.gr/feed/", "organization": "Zougla", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: advertised RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "News247", "canonical_domain": "www.news247.gr", "feed_url": "https://www.news247.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "News247", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; tested /feed/ and /rss/ returned 403; no verified feed adapter"},
-    {"name": "Dnews", "canonical_domain": "www.dnews.gr", "feed_url": "https://www.dnews.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Dnews", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; tested /feed/ and /rss.xml returned 404; no verified feed adapter"},
-    {"name": "LiFO", "canonical_domain": "www.lifo.gr", "feed_url": "https://www.lifo.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "LiFO", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-09 UTC: homepage 200; tested /feed/ 404 and /rss 403; no verified feed adapter"},
-    {"name": "Kathimerini", "canonical_domain": "www.kathimerini.gr", "feed_url": "https://www.kathimerini.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Kathimerini", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; feed not verified"},
-    {"name": "In.gr", "canonical_domain": "www.in.gr", "feed_url": "https://www.in.gr/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "In.gr", "target_region": "national", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"},
-    {"name": "France24 English", "canonical_domain": "www.france24.com", "feed_url": "https://www.france24.com/en/rss", "organization": "France24", "language": "en", "target_region": "global", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: RSS 200 parsed; robots allowed; sampled items on same host"},
-    {"name": "BBC News", "canonical_domain": "www.bbc.com", "feed_url": "https://www.bbc.com/news", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "BBC", "language": "en", "target_region": "global", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; RSS redirects to another host and is not ingestable"},
-    {"name": "Deutsche Welle", "canonical_domain": "www.dw.com", "feed_url": "https://www.dw.com/en/top-stories/s-9097", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "Deutsche Welle", "language": "en", "target_region": "global", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; RSS is on another host and is not ingestable"},
-    {"name": "World Health Organization", "canonical_domain": "www.who.int", "feed_url": "https://www.who.int/", "source_type": "html_index", "extraction_strategy": "requires_site_plugin", "organization": "WHO", "language": "en", "target_region": "global", "rights_status": "unverified", "endpoint_note": "2026-10-08 UTC: homepage 200; no verified feed adapter"}
+    {
+      "name": "Athens Voice",
+      "canonical_domain": "www.athensvoice.gr",
+      "feed_url": "https://www.athensvoice.gr/",
+      "organization": "Athens Voice",
+      "target_region": "attica",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-I"
+      ]
+    },
+    {
+      "name": "iRafina",
+      "canonical_domain": "www.irafina.gr",
+      "feed_url": "https://www.irafina.gr/",
+      "organization": "iRafina",
+      "target_region": "attica",
+      "locality_hint": "Rafina",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-I"
+      ]
+    },
+    {
+      "name": "Notia",
+      "canonical_domain": "www.notia.gr",
+      "feed_url": "https://www.notia.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Notia",
+      "target_region": "attica",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-I"
+      ]
+    },
+    {
+      "name": "Voria",
+      "canonical_domain": "www.voria.gr",
+      "feed_url": "https://www.voria.gr/",
+      "organization": "Voria",
+      "target_region": "central_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-B"
+      ]
+    },
+    {
+      "name": "Thestival",
+      "canonical_domain": "www.thestival.gr",
+      "feed_url": "https://www.thestival.gr/",
+      "organization": "Thestival",
+      "target_region": "central_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-B"
+      ]
+    },
+    {
+      "name": "eMakedonia",
+      "canonical_domain": "www.emakedonia.gr",
+      "feed_url": "https://www.emakedonia.gr/",
+      "organization": "eMakedonia",
+      "target_region": "central_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-B"
+      ]
+    },
+    {
+      "name": "TyposThes",
+      "canonical_domain": "www.typosthes.gr",
+      "feed_url": "https://www.typosthes.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "TyposThes",
+      "target_region": "central_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-B"
+      ]
+    },
+    {
+      "name": "Kozan.gr",
+      "canonical_domain": "kozan.gr",
+      "feed_url": "https://kozan.gr/",
+      "organization": "Kozan.gr",
+      "target_region": "west_macedonia",
+      "locality_hint": "Perdikkas",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-C"
+      ]
+    },
+    {
+      "name": "KozaniLife",
+      "canonical_domain": "www.kozanilife.gr",
+      "feed_url": "https://www.kozanilife.gr/",
+      "organization": "KozaniLife",
+      "target_region": "west_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-C"
+      ]
+    },
+    {
+      "name": "Prologos Kozani",
+      "canonical_domain": "www.prlogos.gr",
+      "feed_url": "https://www.prlogos.gr/",
+      "organization": "Prologos",
+      "target_region": "west_macedonia",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-C"
+      ]
+    },
+    {
+      "name": "Xronos Komotinis",
+      "canonical_domain": "xronos.gr",
+      "feed_url": "https://xronos.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Xronos",
+      "target_region": "east_macedonia_thrace",
+      "locality_hint": "Komotini and Rodopi",
+      "rights_status": "restricted",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-A"
+      ]
+    },
+    {
+      "name": "Evros News",
+      "canonical_domain": "www.evros-news.gr",
+      "feed_url": "https://www.evros-news.gr/",
+      "organization": "Evros News",
+      "target_region": "east_macedonia_thrace",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-A"
+      ]
+    },
+    {
+      "name": "Thrakinea",
+      "canonical_domain": "www.thrakinea.gr",
+      "feed_url": "https://www.thrakinea.gr/",
+      "organization": "Thrakinea",
+      "target_region": "east_macedonia_thrace",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-A"
+      ]
+    },
+    {
+      "name": "Proini Kavala",
+      "canonical_domain": "www.proininews.gr",
+      "feed_url": "https://www.proininews.gr/",
+      "organization": "Proini Kavala",
+      "target_region": "east_macedonia_thrace",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-A"
+      ]
+    },
+    {
+      "name": "EpirusPost",
+      "canonical_domain": "www.epiruspost.gr",
+      "feed_url": "https://www.epiruspost.gr/",
+      "organization": "EpirusPost",
+      "target_region": "epirus",
+      "locality_hint": "Konitsa",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-D"
+      ]
+    },
+    {
+      "name": "Ipeirotikos Agon",
+      "canonical_domain": "www.agon.gr",
+      "feed_url": "https://www.agon.gr/",
+      "organization": "Ipeirotikos Agon",
+      "target_region": "epirus",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-D"
+      ]
+    },
+    {
+      "name": "Larissanet",
+      "canonical_domain": "www.larissanet.gr",
+      "feed_url": "https://www.larissanet.gr/",
+      "organization": "Larissanet",
+      "target_region": "thessaly",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-E"
+      ]
+    },
+    {
+      "name": "OnLarissa",
+      "canonical_domain": "www.onlarissa.gr",
+      "feed_url": "https://www.onlarissa.gr/",
+      "organization": "OnLarissa",
+      "target_region": "thessaly",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-E"
+      ]
+    },
+    {
+      "name": "Enimerosi Corfu",
+      "canonical_domain": "enimerosi.com",
+      "feed_url": "https://enimerosi.com/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Enimerosi",
+      "target_region": "ionian_islands",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-F"
+      ]
+    },
+    {
+      "name": "Corfu Press",
+      "canonical_domain": "www.corfupress.com",
+      "feed_url": "https://www.corfupress.com/",
+      "organization": "Corfu Press",
+      "target_region": "ionian_islands",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-F"
+      ]
+    },
+    {
+      "name": "Kefalonia Press",
+      "canonical_domain": "www.kefaloniapress.gr",
+      "feed_url": "https://www.kefaloniapress.gr/",
+      "organization": "Kefalonia Press",
+      "target_region": "ionian_islands",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-F"
+      ]
+    },
+    {
+      "name": "TheBest Patras",
+      "canonical_domain": "www.thebest.gr",
+      "feed_url": "https://www.thebest.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "TheBest",
+      "target_region": "west_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ]
+    },
+    {
+      "name": "Pelop",
+      "canonical_domain": "pelop.gr",
+      "feed_url": "https://pelop.gr/",
+      "organization": "Pelop",
+      "target_region": "west_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ]
+    },
+    {
+      "name": "Agrinio News",
+      "canonical_domain": "www.agrinionews.gr",
+      "feed_url": "https://www.agrinionews.gr/",
+      "organization": "Agrinio News",
+      "target_region": "west_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ]
+    },
+    {
+      "name": "Patris News",
+      "canonical_domain": "www.patrisnews.com",
+      "feed_url": "https://www.patrisnews.com/",
+      "organization": "Patris News",
+      "target_region": "west_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ]
+    },
+    {
+      "name": "Agrinio Times",
+      "canonical_domain": "www.agriniotimes.gr",
+      "feed_url": "https://www.agriniotimes.gr/",
+      "organization": "Agrinio Times",
+      "target_region": "west_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ]
+    },
+    {
+      "name": "LamiaReport",
+      "canonical_domain": "www.lamiareport.gr",
+      "feed_url": "https://www.lamiareport.gr/",
+      "organization": "LamiaReport",
+      "target_region": "central_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-H"
+      ]
+    },
+    {
+      "name": "EviaZoom",
+      "canonical_domain": "www.eviazoom.gr",
+      "feed_url": "https://www.eviazoom.gr/",
+      "organization": "EviaZoom",
+      "target_region": "central_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-H"
+      ]
+    },
+    {
+      "name": "Evima",
+      "canonical_domain": "www.evima.gr",
+      "feed_url": "https://www.evima.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Evima",
+      "target_region": "central_greece",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-H"
+      ]
+    },
+    {
+      "name": "ArcadiaPortal",
+      "canonical_domain": "www.arcadiaportal.gr",
+      "feed_url": "https://www.arcadiaportal.gr/",
+      "organization": "ArcadiaPortal",
+      "target_region": "peloponnese",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-J"
+      ]
+    },
+    {
+      "name": "Anagnostis",
+      "canonical_domain": "www.anagnostis.org",
+      "feed_url": "https://www.anagnostis.org/",
+      "organization": "Anagnostis",
+      "target_region": "peloponnese",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-J"
+      ]
+    },
+    {
+      "name": "Sto Nisi",
+      "canonical_domain": "www.stonisi.gr",
+      "feed_url": "https://www.stonisi.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Sto Nisi",
+      "target_region": "north_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-K"
+      ]
+    },
+    {
+      "name": "Samos Today",
+      "canonical_domain": "samostoday.gr",
+      "feed_url": "https://samostoday.gr/",
+      "organization": "Samos Today",
+      "target_region": "north_aegean",
+      "locality_hint": "Samos, Ikaria and Fournoi",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-K"
+      ]
+    },
+    {
+      "name": "Politis Chios",
+      "canonical_domain": "www.politischios.gr",
+      "feed_url": "https://www.politischios.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Politis Chios",
+      "target_region": "north_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-K"
+      ]
+    },
+    {
+      "name": "Empros Lesvos",
+      "canonical_domain": "www.emprosnet.gr",
+      "feed_url": "https://www.emprosnet.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Empros Lesvos",
+      "target_region": "north_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-K"
+      ]
+    },
+    {
+      "name": "Rodiaki",
+      "canonical_domain": "www.rodiaki.gr",
+      "feed_url": "https://www.rodiaki.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Rodiaki",
+      "target_region": "south_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-L"
+      ]
+    },
+    {
+      "name": "Parianos Typos",
+      "canonical_domain": "parianostypos.gr",
+      "feed_url": "https://parianostypos.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Parianos Typos",
+      "target_region": "south_aegean",
+      "locality_hint": "Paros and Antiparos",
+      "rights_status": "restricted",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-L"
+      ]
+    },
+    {
+      "name": "Dimokratiki Rhodes",
+      "canonical_domain": "www.dimokratiki.gr",
+      "feed_url": "https://www.dimokratiki.gr/",
+      "organization": "Dimokratiki",
+      "target_region": "south_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-L"
+      ]
+    },
+    {
+      "name": "Syros Today",
+      "canonical_domain": "www.syrostoday.gr",
+      "feed_url": "https://www.syrostoday.gr/",
+      "organization": "Syros Today",
+      "target_region": "south_aegean",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-L"
+      ]
+    },
+    {
+      "name": "CretaLive",
+      "canonical_domain": "www.cretalive.gr",
+      "feed_url": "https://www.cretalive.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "CretaLive",
+      "target_region": "crete",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-M"
+      ]
+    },
+    {
+      "name": "Neakriti",
+      "canonical_domain": "www.neakriti.gr",
+      "feed_url": "https://www.neakriti.gr/",
+      "organization": "Neakriti",
+      "target_region": "crete",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-M"
+      ]
+    },
+    {
+      "name": "Haniotika Nea",
+      "canonical_domain": "www.haniotika-nea.gr",
+      "feed_url": "https://www.haniotika-nea.gr/",
+      "organization": "Haniotika Nea",
+      "target_region": "crete",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-M"
+      ]
+    },
+    {
+      "name": "Zarpa News",
+      "canonical_domain": "www.zarpanews.gr",
+      "feed_url": "https://www.zarpanews.gr/",
+      "organization": "Zarpa News",
+      "target_region": "crete",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-M"
+      ]
+    },
+    {
+      "name": "ERTNews",
+      "canonical_domain": "www.ertnews.gr",
+      "feed_url": "https://www.ertnews.gr/",
+      "organization": "ERTNews",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Naftemporiki",
+      "canonical_domain": "www.naftemporiki.gr",
+      "feed_url": "https://www.naftemporiki.gr/",
+      "organization": "Naftemporiki",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Ta Nea",
+      "canonical_domain": "www.tanea.gr",
+      "feed_url": "https://www.tanea.gr/",
+      "organization": "Ta Nea",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Skai",
+      "canonical_domain": "www.skai.gr",
+      "feed_url": "https://www.skai.gr/",
+      "organization": "Skai",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Proto Thema",
+      "canonical_domain": "www.protothema.gr",
+      "feed_url": "https://www.protothema.gr/",
+      "organization": "Proto Thema",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "CNN Greece",
+      "canonical_domain": "www.cnn.gr",
+      "feed_url": "https://www.cnn.gr/",
+      "organization": "CNN Greece",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Newsbeast",
+      "canonical_domain": "www.newsbeast.gr",
+      "feed_url": "https://www.newsbeast.gr/",
+      "organization": "Newsbeast",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Iefimerida",
+      "canonical_domain": "www.iefimerida.gr",
+      "feed_url": "https://www.iefimerida.gr/",
+      "organization": "Iefimerida",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Capital",
+      "canonical_domain": "www.capital.gr",
+      "feed_url": "https://www.capital.gr/",
+      "organization": "Capital",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "To Vima",
+      "canonical_domain": "www.tovima.gr",
+      "feed_url": "https://www.tovima.gr/",
+      "organization": "To Vima",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Newsit",
+      "canonical_domain": "www.newsit.gr",
+      "feed_url": "https://www.newsit.gr/",
+      "organization": "Newsit",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Efsyn",
+      "canonical_domain": "www.efsyn.gr",
+      "feed_url": "https://www.efsyn.gr/",
+      "organization": "Efsyn",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Real",
+      "canonical_domain": "www.real.gr",
+      "feed_url": "https://www.real.gr/",
+      "organization": "Real",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Ethnos",
+      "canonical_domain": "www.ethnos.gr",
+      "feed_url": "https://www.ethnos.gr/",
+      "organization": "Ethnos",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Enikos",
+      "canonical_domain": "www.enikos.gr",
+      "feed_url": "https://www.enikos.gr/",
+      "organization": "Enikos",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Zougla",
+      "canonical_domain": "www.zougla.gr",
+      "feed_url": "https://www.zougla.gr/",
+      "organization": "Zougla",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "News247",
+      "canonical_domain": "www.news247.gr",
+      "feed_url": "https://www.news247.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "News247",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Dnews",
+      "canonical_domain": "www.dnews.gr",
+      "feed_url": "https://www.dnews.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Dnews",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "LiFO",
+      "canonical_domain": "www.lifo.gr",
+      "feed_url": "https://www.lifo.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "LiFO",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "Kathimerini",
+      "canonical_domain": "www.kathimerini.gr",
+      "feed_url": "https://www.kathimerini.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Kathimerini",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "In.gr",
+      "canonical_domain": "www.in.gr",
+      "feed_url": "https://www.in.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "In.gr",
+      "target_region": "national",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ]
+    },
+    {
+      "name": "France24 English",
+      "canonical_domain": "www.france24.com",
+      "feed_url": "https://www.france24.com/en/",
+      "organization": "France24",
+      "language": "en",
+      "target_region": "global",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "FR",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:FR"
+      ]
+    },
+    {
+      "name": "BBC News",
+      "canonical_domain": "www.bbc.com",
+      "feed_url": "https://www.bbc.com/news",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "BBC",
+      "language": "en",
+      "target_region": "global",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "GB",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GB"
+      ]
+    },
+    {
+      "name": "Deutsche Welle",
+      "canonical_domain": "www.dw.com",
+      "feed_url": "https://www.dw.com/en/top-stories/s-9097",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "Deutsche Welle",
+      "language": "en",
+      "target_region": "global",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "DE",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:DE"
+      ]
+    },
+    {
+      "name": "World Health Organization",
+      "canonical_domain": "www.who.int",
+      "feed_url": "https://www.who.int/news",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "organization": "WHO",
+      "language": "en",
+      "target_region": "global",
+      "rights_status": "public_facts",
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "country_code": "CH",
+      "poll_minutes": 15,
+      "locality_hint": "",
+      "coverage_ids": [
+        "world-geonames-3.0.2:CH"
+      ]
+    },
+    {
+      "name": "Gazzetta",
+      "canonical_domain": "www.gazzetta.gr",
+      "feed_url": "https://www.gazzetta.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "national",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ],
+      "organization": "Gazzetta",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Sport24",
+      "canonical_domain": "www.sport24.gr",
+      "feed_url": "https://www.sport24.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "national",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ],
+      "organization": "Sport24",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Sport FM",
+      "canonical_domain": "www.sport-fm.gr",
+      "feed_url": "https://www.sport-fm.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "national",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ],
+      "organization": "Sport FM",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Hellenic Police",
+      "canonical_domain": "www.astynomia.gr",
+      "feed_url": "https://www.astynomia.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "national",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ],
+      "organization": "Hellenic Police",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Greek Government",
+      "canonical_domain": "www.gov.gr",
+      "feed_url": "https://www.gov.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "national",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR"
+      ],
+      "organization": "Greek Government",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Athens",
+      "canonical_domain": "www.cityofathens.gr",
+      "feed_url": "https://www.cityofathens.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "attica",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-I"
+      ],
+      "organization": "Municipality of Athens",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Thessaloniki",
+      "canonical_domain": "thessaloniki.gr",
+      "feed_url": "https://thessaloniki.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "central_macedonia",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-B"
+      ],
+      "organization": "Municipality of Thessaloniki",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Patras",
+      "canonical_domain": "www.e-patras.gr",
+      "feed_url": "https://www.e-patras.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "west_greece",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-G"
+      ],
+      "organization": "Municipality of Patras",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Heraklion",
+      "canonical_domain": "www.heraklion.gr",
+      "feed_url": "https://www.heraklion.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "crete",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-M"
+      ],
+      "organization": "Municipality of Heraklion",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Larissa",
+      "canonical_domain": "www.larissa.gov.gr",
+      "feed_url": "https://www.larissa.gov.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "thessaly",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-E"
+      ],
+      "organization": "Municipality of Larissa",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Municipality of Ioannina",
+      "canonical_domain": "ioannina.gr",
+      "feed_url": "https://ioannina.gr/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GR",
+      "language": "el",
+      "target_region": "epirus",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GR-D"
+      ],
+      "organization": "Municipality of Ioannina",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "The Guardian",
+      "canonical_domain": "www.theguardian.com",
+      "feed_url": "https://www.theguardian.com/international",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GB",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GB"
+      ],
+      "organization": "The Guardian",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Associated Press",
+      "canonical_domain": "apnews.com",
+      "feed_url": "https://apnews.com/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "US",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:US"
+      ],
+      "organization": "Associated Press",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Reuters",
+      "canonical_domain": "www.reuters.com",
+      "feed_url": "https://www.reuters.com/world/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "GB",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:GB"
+      ],
+      "organization": "Reuters",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Al Jazeera",
+      "canonical_domain": "www.aljazeera.com",
+      "feed_url": "https://www.aljazeera.com/news/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "QA",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:QA"
+      ],
+      "organization": "Al Jazeera",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "NPR",
+      "canonical_domain": "www.npr.org",
+      "feed_url": "https://www.npr.org/sections/news/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "US",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:US"
+      ],
+      "organization": "NPR",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "ABC Australia",
+      "canonical_domain": "www.abc.net.au",
+      "feed_url": "https://www.abc.net.au/news/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "AU",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:AU"
+      ],
+      "organization": "ABC Australia",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "NHK World",
+      "canonical_domain": "www3.nhk.or.jp",
+      "feed_url": "https://www3.nhk.or.jp/nhkworld/en/news/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "JP",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:JP"
+      ],
+      "organization": "NHK World",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "Channel NewsAsia",
+      "canonical_domain": "www.channelnewsasia.com",
+      "feed_url": "https://www.channelnewsasia.com/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "SG",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:SG"
+      ],
+      "organization": "Channel NewsAsia",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "The Hindu",
+      "canonical_domain": "www.thehindu.com",
+      "feed_url": "https://www.thehindu.com/news/international/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "IN",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:IN"
+      ],
+      "organization": "The Hindu",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "AllAfrica",
+      "canonical_domain": "allafrica.com",
+      "feed_url": "https://allafrica.com/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "ZA",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:ZA"
+      ],
+      "organization": "AllAfrica",
+      "trust_category": "publisher",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 1,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "UN News",
+      "canonical_domain": "news.un.org",
+      "feed_url": "https://news.un.org/en/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "US",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:US"
+      ],
+      "organization": "UN News",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "European Commission",
+      "canonical_domain": "ec.europa.eu",
+      "feed_url": "https://ec.europa.eu/commission/presscorner/home/en",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "BE",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:BE"
+      ],
+      "organization": "European Commission",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "NASA",
+      "canonical_domain": "www.nasa.gov",
+      "feed_url": "https://www.nasa.gov/news/",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "US",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:US"
+      ],
+      "organization": "NASA",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    },
+    {
+      "name": "European Space Agency",
+      "canonical_domain": "www.esa.int",
+      "feed_url": "https://www.esa.int/Newsroom",
+      "source_type": "html",
+      "extraction_strategy": "article_html",
+      "country_code": "FR",
+      "language": "en",
+      "target_region": "global",
+      "coverage_ids": [
+        "world-geonames-3.0.2:FR"
+      ],
+      "organization": "European Space Agency",
+      "trust_category": "official_statement",
+      "rights_status": "public_facts",
+      "poll_minutes": 15,
+      "priority": 5,
+      "endpoint_note": "Public HTML entry; live verification pending",
+      "locality_hint": ""
+    }
   ]
 }

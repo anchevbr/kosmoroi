@@ -1,9 +1,14 @@
 x-app-base: &app-base
-  build: .
+  build:
+    context: .
+    args:
+      INSTALL_LOCAL_AI: "${INSTALL_LOCAL_AI:-false}"
   env_file: .env
   environment: &app-environment
     NEWS_DATABASE_URL: "postgresql+psycopg://news:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/greek_news"
     NEWS_REDIS_URL: redis://redis:6379/0
+  volumes:
+    - ./models:/models:ro
   restart: unless-stopped
 
 services:
@@ -42,19 +47,32 @@ services:
       db:
         condition: service_healthy
 
+  bootstrap:
+    <<: *app-base
+    restart: "no"
+    command: ["greek-news", "bootstrap"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
   api:
     <<: *app-base
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
-      migrate:
+      bootstrap:
         condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
   worker:
     <<: *app-base
-    command: ["celery", "-A", "greek_news.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=2"]
+    command: ["celery", "-A", "greek_news.celery_app:celery_app", "worker", "--loglevel=INFO", "--concurrency=1"]
     depends_on:
-      migrate:
+      bootstrap:
         condition: service_completed_successfully
       redis:
         condition: service_healthy
@@ -63,7 +81,7 @@ services:
     <<: *app-base
     command: ["celery", "-A", "greek_news.celery_app:celery_app", "beat", "--loglevel=INFO", "--schedule=/tmp/celerybeat-schedule"]
     depends_on:
-      migrate:
+      bootstrap:
         condition: service_completed_successfully
       redis:
         condition: service_healthy

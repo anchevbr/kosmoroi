@@ -1,6 +1,8 @@
 """Database/session lifecycle and UTC timestamp handling."""
 
 from datetime import datetime, timezone
+from contextlib import contextmanager
+from contextvars import ContextVar
 from functools import lru_cache
 from uuid import uuid4
 
@@ -12,8 +14,21 @@ from sqlalchemy.types import TypeDecorator
 from greek_news.config import get_settings
 
 
+_clock: ContextVar[datetime | None] = ContextVar("news_clock", default=None)
+
+
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return _clock.get() or datetime.now(timezone.utc)
+
+
+@contextmanager
+def use_clock(value: datetime):
+    """One coherent clock for a worker tick or an offline scenario."""
+    token = _clock.set(utc_date(value))
+    try:
+        yield
+    finally:
+        _clock.reset(token)
 
 
 def utc_date(value: datetime) -> datetime:

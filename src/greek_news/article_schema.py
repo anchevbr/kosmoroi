@@ -29,7 +29,7 @@ class SourceReference(BaseModel):
 class ArticleDraft(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    title_candidates: tuple[str, str, str]
+    title_candidates: list[str] = Field(min_length=3, max_length=3)
     selected_title: str = Field(min_length=1, max_length=220)
     title_rationale: str
     title_evidence_ids: list[str] = Field(min_length=1)
@@ -46,6 +46,13 @@ class ArticleDraft(BaseModel):
     seo_evidence_ids: list[str] = Field(min_length=1)
     source_references: list[SourceReference] = Field(min_length=1)
     risk_flags: list[str] = Field(default_factory=list)
+    language: str = "el"
+    edition: str = "greece"
+    subcategory: str | None = None
+    article_format: str = "news"
+    entity_ids: list[str] = Field(default_factory=list)
+    country_codes: list[str] = Field(default_factory=list)
+    publisher_coverage_ids: list[str] = Field(default_factory=list)
 
     @field_validator("selected_title")
     @classmethod

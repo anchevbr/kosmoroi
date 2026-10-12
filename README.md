@@ -1,39 +1,82 @@
-# Greek news backend
+# Kosmoroi backend
 
-Permission-gated, evidence-backed Greek news backend. Eligible, source-linked stories can be drafted, validated and published by the worker without an editorial click. The included demo is **offline and fictional**; the bundled source inventory is disabled and does not provide licensed, nationwide live coverage.
+Automatic Greek local/national and worldwide news from public **HTML pages**. No publisher news API, RSS/Atom feed, XML sitemap input, or browser scraping of ChatGPT is required. An AI model analyzes downloaded articles, writes original Greek coverage, and separately verifies every generated headline and body section. Optional OpenAI web search discovers additional article URLs; those URLs must still pass HTML fetching and extraction.
 
-## Local pilot
+## Start
 
-Requires Python 3.12-3.14. SQLite is for local tests and single-process exploration; deploy with PostgreSQL.
-
-```sh
-python3.13 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
-.venv/bin/alembic upgrade head
-.venv/bin/greek-news seed-demo
-NEWS_FIXTURE_MODE=true .venv/bin/greek-news run-once
-NEWS_FIXTURE_MODE=true NEWS_ADMIN_TOKEN=local-admin-token NEWS_EDITOR_TOKEN=local-editor-token \
-  .venv/bin/uvicorn greek_news.api:app --host 127.0.0.1 --port 8000
+```bash
+cp .env.example .env
+mkdir -p models
+# Edit .env: database password, random admin/editor tokens, AI key and public URL.
+docker compose up --build -d
+docker compose logs -f bootstrap worker
 ```
 
-`GET /health`, `GET /ready`, and `/docs` are then available at `http://127.0.0.1:8000`. With `NEWS_FIXTURE_MODE=true`, the fictional notices can publish on the tick and appear in `GET /articles`; without it, fictional content is hidden from the public API. The fixture register contains 13 regions but only a small illustrative set of units and municipalities. Its place IDs and relations are **not** an official administrative register.
+Set `NEWS_LLM_API_KEY` (or `OPENAI_API_KEY`) to a funded AI account key. This is the AI service key, not a news API key. `NEWS_LLM_MODEL=gpt-5.4-mini` is the initial configurable model. Local inference is also supported: install a multilingual instruction GGUF in `models/news.gguf`, set `INSTALL_LOCAL_AI=true`, `NEWS_LLM_PROVIDER=llama_cpp`, `NEWS_LLM_MODEL` to its name, and `NEWS_WEB_SEARCH_ENABLED=false`. Local inference uses the Python llama.cpp binding in process and requires enough RAM/CPU or a compatible GPU build.
 
-Use `GET /admin/stories` and `GET /admin/articles` with `Authorization: Bearer local-editor-token` to inspect work and optionally edit or correct articles. The worker schedules generation and publication automatically for eligible evidence; `POST /admin/stories/{id}/generate` can also queue a draft. `greek-news run-once --no-schedule` processes existing jobs. See [the operator runbook](docs/OPERATIONS.md) for optional controls, jobs, backups, and VPS setup. The deployed stack is defined in [compose.yaml](compose.yaml).
+Compose migrates PostgreSQL, imports the offline GeoNames gazetteer and 93 HTML source candidates, and starts the API, worker and scheduler. API binds to localhost:8000; place an HTTPS reverse proxy in front for public access. No editorial approval, source-count quorum, or per-source activation click is required. Sources are verified automatically and normal low-risk local news can proceed from one usable source.
 
-```sh
-.venv/bin/python -m pytest -q
-.venv/bin/ruff check src tests alembic
-.venv/bin/alembic check
+```bash
+docker compose exec api greek-news doctor
+curl http://localhost:8000/health
+curl http://localhost:8000/ready
 ```
 
-## Data and safeguards
+`/health` reports process liveness. `/ready` and `doctor` report migration, geography, AI configuration, source activation, worker activity and authentication prerequisites. Configuration readiness does not prove successful AI billing, complete regional coverage, or perfect factual accuracy. Watch actual source health and completed jobs in `/admin/metrics` and `/admin/jobs` using the admin bearer token.
 
-- PostgreSQL owns sources, immutable revisions, event groups, article versions, outbox records, audit events, leases, and budget reservations. Redis is only the Celery broker; one Beat process schedules database-backed jobs.
-- The worker schedules an idempotent hourly sync of the bundled [source inventory](fixtures/source_catalog.json). It includes 68 distinct publishers: 21 national (including Ta Nea, Skai and CNN Greece), 43 regional/local across all 13 Greek regions, and 4 international. Of these, 48 have technically verified RSS endpoints and 20 are homepage-only research leads; all have permissions off and stay inactive. A verified RSS response is not a reuse license. Sources need documented permission for discovery, fetch, storage and AI processing before the worker can verify and activate a compatible feed; text/image reuse requires separate permissions. Feed polling observes `robots.txt`, checks HTTPS/public addresses at connection time, limits redirects/size/time, uses conditional requests, and backs off on errors.
-- Curated claims and place roles are required for drafting. RSS metadata alone is **not** a verified fact extraction pipeline; live feed items without curated evidence are stored but do not become stories. The fictional fixture supplies its own source-linked claims.
-- The geography importer accepts versioned, reviewed JSON. It distinguishes affected/occurred/background places and refuses ambiguous matches. A national story is not automatically attached to every municipality.
-- Draft validation checks structure, references, evidence IDs, place IDs/roles, numbers, intervals, and risk flags; it cannot prove semantic truth or full headline-body fidelity. No editor approval is required for a valid, eligible version. Conflicting or ambiguous evidence, insufficiently corroborated sensitive claims, and expired service notices cannot auto-publish.
-- Publication and generation are unpaused by default, with optional configuration and database pause controls. Explicit source/topic policy entries can deny automatic publication; they are not required to opt in. The default fake adapter accepts fictional, curated evidence only; live drafting needs configured `openai_compatible` credentials. Fixture content is visible only with explicit `NEWS_FIXTURE_MODE=true`.
-- Public API returns only published versions with source links, a correction note, disclosure, UTC and Athens timestamps, and role-specific geographic filters. Editor changes create new versions; a valid, eligible correction can publish automatically after revalidation. Withdrawal removes the article from public queries while keeping its audit history.
+## Automatic workflow
 
-The [source review](docs/SOURCES.md) distinguishes verified RSS endpoints from homepage-only leads and explains why none are enabled. Real production ingestion still needs rights clearance, a reviewed authoritative geography register, source-specific evidence extraction/curation, configured live-model credentials, and operational verification. The locality hints in the source inventory are research leads, **not** official place IDs or evidence for auto-geotagging. Cost-per-article data is unavailable until actual provider pricing and usage are configured. No live-source or PostgreSQL multi-worker claim is made from the SQLite-only local tests.
+1. Import HTML source entries, discover linked sections/articles, and optionally search for additional news using the AI provider's web-search tool.
+2. Verify public HTTPS, robots rules, response size/type and host boundaries. Keep a durable URL frontier, conditional requests, per-source request cadence, retry/backoff and recent-article watches.
+3. Extract article text, JSON-LD/headline/date metadata and canonical URL. Navigation, XML feeds, API JSON, access challenges and unreadable pages are rejected.
+4. Extract exact source excerpts, classify categories and geographic roles, resolve places, and group related events. Publisher coverage is never used as proof of an event location.
+5. Rank local/national/international candidates in separate capacity lanes. Write an original article with three headline candidates and sentence evidence references.
+6. Apply structural checks and a separate AI semantic check for names, numbers, dates, attribution, allegations, causation and negation. Failed drafts retry up to three attempts with feedback, then skip automatically. Sensitive claims need independent corroboration; contradictory evidence waits for changed evidence rather than human review.
+7. Publish through a durable outbox, rechecking current evidence and automatic policy. Revised sources refresh story geography and generate updates to the same article ID/URL. The public API reads the published snapshot until a new version actually publishes.
+
+AI calls for extraction, writing, verification and search are recorded, budgeted before execution, and reconciled against usage. Completed responses can be reused after worker interruption; uncertain attempts retain a conservative reservation and have bounded automatic recovery. Default limits are 100 drafts, 600 AI calls, 4M tokens and $10/day; whichever limit is reached first pauses additional AI work until the next day. These are caps, not promised article output or actual cost. Update configured prices when changing models or provider pricing.
+
+## Frontend contract and SEO
+
+| Endpoint | Purpose |
+| --- | --- |
+| `/taxonomy` | Stable edition, category, subcategory, format and scope IDs |
+| `/places` | Country/region/city place IDs and hierarchy; supports country, parent, kind and text filters |
+| `/articles` | SQL-filtered published articles with edition, country, place/region/municipality, category, subcategory, topic, entity, language, text, date and pagination filters |
+| `/articles/{id}` | JSON article, sources, country/geography roles, tags, entities, ad context, correction note and verification status |
+| `/articles/{id}/related` | Related published articles for internal links |
+| `/articles/{id}/{slug}` | Crawlable HTML with canonical, description, social metadata and NewsArticle JSON-LD; JSON with `Accept: application/json` |
+| `/sitemap.xml` | Sitemap index |
+| `/sitemaps/articles-1.xml` | Paginated article URLs and genuine modification dates |
+| `/sitemaps/news.xml` | Recent news sitemap (two days, maximum 1,000 URLs) |
+
+There is no RSS input or export. The XML sitemaps above are **outputs for our own site's SEO**, not collection inputs. Headlines are factual and specific; the backend does not promise rankings or traffic. No images are republished merely because they appeared in downloaded HTML. Media is currently an empty list, ready for a separately licensed media workflow.
+
+GeoNames data is attributed under CC BY 4.0. The production gazetteer includes countries, Greece's 13 mapped regions, Greek cities/settlements with population >=500 and world cities >=15,000. It is not a complete official Greek municipality register: cities remain cities. Import an authoritative municipality register with `greek-news import-geo path.json` for exact municipality coverage. Ambiguous or unknown places stay unresolved and are not invented for ad targeting.
+
+## Source configuration
+
+The catalog targets all 13 Greek regions plus national and international reporting, sports, government and community notices. Live activation is determined by actual HTML/robots checks; entries are candidates rather than a claim that every publisher works. Script-only, paywalled, denied or changed sites are skipped/backed off and may need a different HTML entry or selector. No paywall, login or CAPTCHA bypass is implemented.
+
+`NEWS_PUBLIC_HTML_ENABLED=true` applies the configured factual-reporting access policy to public candidates. This policy permits internal analysis and original attributed reporting in this application; it does **not** manufacture publisher licenses. Known restricted catalog entries remain excluded. Source-owned wording and photos are not licensed for republication. Raw full article text expires after seven days; evidence excerpts, content hashes, revisions, generated content and audit records remain traceable. Operators can exclude a publisher or topic through configuration without introducing article-review queues.
+
+Add HTML sections using `entry_urls` and optional `link_selector`, `article_url_pattern`, `index_url_pattern`. The source API accepts `entry_url`; the database's legacy `feed_url` field is retained for migration compatibility and stores an HTML entry URL. Old feed entries are never polled and matching catalog entries migrate to HTML automatically.
+
+## Local development and validation
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+pip install '.[dev]'
+alembic upgrade head
+greek-news bootstrap
+greek-news run-once
+ruff check src tests alembic
+pytest -q
+```
+
+PostgreSQL is the production target. SQLite supports development and tests with one worker. Run one Celery Beat and the supplied worker configuration; PostgreSQL also uses a pipeline advisory lock and row locks. The CI workflow runs tests, PostgreSQL migration checks, Compose validation and a Docker build. Supply `NEWS_TEST_POSTGRES_URL` to run PostgreSQL concurrency tests locally.
+
+Offline fictional scenarios require explicit `NEWS_FIXTURE_MODE=true` and `NEWS_LLM_PROVIDER=fake`. Fixture content is hidden from production public queries. Tests inject HTML and model boundaries; they do not establish the factual quality of a real model or availability of live publishers. A live server, funded AI key (or model file) and successful source checks are required to establish live operation.
+
+See [operations](docs/OPERATIONS.md), [sources](docs/SOURCES.md), and [AI provider reference](https://developers.openai.com/api/docs/guides/tools-web-search).

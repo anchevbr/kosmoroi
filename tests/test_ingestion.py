@@ -42,8 +42,9 @@ def test_reimports_and_changed_facts_make_immutable_revisions(session):
     assert session.scalar(select(func.count()).select_from(SourceItem)) == 1
     assert session.scalar(select(func.count()).select_from(SourceRevision)) == 2
     assert session.get(SourceRevision, initial.revision_id).title == "Πάτρα: διακοπή νερού"
-    assert ingest_item(session, source, notice()).state == "unchanged"
-    assert session.get(SourceItem, initial.item_id).current_revision == 2
+    assert ingest_item(session, source, notice()).state == "revised"
+    assert session.get(SourceItem, initial.item_id).current_revision == 3
+    assert session.scalar(select(func.count()).select_from(SourceRevision)) == 3
 
 
 def test_refuses_unreviewed_permissions_and_naive_dates(session):

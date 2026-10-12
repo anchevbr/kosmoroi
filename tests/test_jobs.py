@@ -1,7 +1,6 @@
 import json
 from datetime import datetime, timedelta, timezone
 
-import httpx
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
@@ -10,12 +9,12 @@ from greek_news.api import create_app
 from greek_news.budget import reserve_generation
 from greek_news.config import Settings, get_settings
 from greek_news.db import Base, get_session
-from greek_news.discovery import DiscoveryResult, verify_candidate
+from greek_news.discovery import DiscoveryResult
 from greek_news.geography import import_register
 from greek_news.ingestion import EvidenceInput, PlaceHint, SourceInput, ingest_item
 from greek_news.jobs import claim_due, enqueue, retry_failed, run_once
 from greek_news.models import Article, ArticleVersion, Job, LLMCall, Source, SourceItem
-from greek_news.polling import PollResult, poll_source
+from greek_news.polling import PollResult
 from greek_news.publishing import approve_version, request_publication, set_pause
 from greek_news.seeds import seed_demo
 from greek_news.stories import group_item
@@ -94,7 +93,7 @@ def test_redisless_pending_job_and_expired_lease_are_recoverable(tmp_path):
         assert claim_due(session, now=NOW) == [first_id]
         session.commit()
     with Session(engine) as session:
-        assert claim_due(session, now=NOW + timedelta(minutes=6)) == [first_id]
+        assert claim_due(session, now=NOW + timedelta(minutes=31)) == [first_id]
         assert session.get(Job, first_id).attempts == 2
         session.commit()
     engine.dispose()
@@ -148,7 +147,7 @@ def test_single_local_primary_source_publishes_in_one_tick_with_no_approval(tmp_
         source_id, story_id = source.id, story.id
     settings = Settings(_env_file=None, fixture_mode=True, source_catalog_path="")
     result = run_once(factory, settings, now=NOW)
-    assert result["scheduled"] == 1 and result["succeeded"] == 2, result
+    assert result["scheduled"] == 3 and result["succeeded"] == 3, result
     with factory() as database:
         article = database.scalar(select(Article).where(Article.story_id == story_id))
         assert article.status == "published" and article.editor_name is None
@@ -171,7 +170,7 @@ def test_local_story_retains_capacity_alongside_national_news(tmp_path):
     settings = Settings(_env_file=None, fixture_mode=True, source_catalog_path="", national_selection_max=1,
                         regional_selection_max=1)
     result = run_once(factory, settings, now=NOW)
-    assert result["succeeded"] == 4, result
+    assert result["succeeded"] == 5, result
     assert fixture_client(factory, settings).get("/articles").json()["total"] == 2
     with factory() as database:
         assert database.scalar(select(Article).where(Article.story_id == local_id)).status == "published"
@@ -184,7 +183,7 @@ def test_source_revision_republishes_existing_article_without_duplicate(tmp_path
         source, story, notice = add_notice(session)
         source_id, story_id = source.id, story.id
     settings = Settings(_env_file=None, fixture_mode=True, source_catalog_path="")
-    assert run_once(factory, settings, now=NOW)["succeeded"] == 2
+    assert run_once(factory, settings, now=NOW)["succeeded"] == 3
     with factory() as session:
         article_id = session.scalar(select(Article).where(Article.story_id == story_id)).id
     client = fixture_client(factory, settings)
@@ -213,7 +212,7 @@ def test_eligible_new_source_activates_on_worker_tick_without_click(tmp_path, mo
     factory = auto_factory(tmp_path)
     with factory() as session, session.begin():
         source = Source(name="Authorized test feed", canonical_domain="town.example",
-                        feed_url="https://town.example/feed", source_type="rss",
+                        feed_url="https://town.example/feed", source_type="html",
                         enabled=False, can_discover=True, can_fetch=True, can_store=True,
                         can_process_ai=True, permission_basis="Operator-configured use grant",
                         permission_reviewed_at=NOW - timedelta(days=1))
@@ -227,7 +226,7 @@ def test_eligible_new_source_activates_on_worker_tick_without_click(tmp_path, mo
         return DiscoveryResult("active")
 
     monkeypatch.setattr("greek_news.jobs.verify_candidate", verified)
-    monkeypatch.setattr("greek_news.jobs.poll_source", lambda database, source: PollResult("unchanged"))
+    monkeypatch.setattr("greek_news.jobs.poll_source", lambda database, source, **kwargs: PollResult("unchanged"))
     result = run_once(factory, Settings(_env_file=None), now=NOW)
     assert result["scheduled"] >= 1 and result["succeeded"] >= 1
     with factory() as database:
@@ -235,49 +234,15 @@ def test_eligible_new_source_activates_on_worker_tick_without_click(tmp_path, mo
         assert database.scalar(select(Job).where(Job.kind == "discover")).state == "completed"
 
 
-def test_html_index_is_verified_and_polled_without_publishing_metadata(tmp_path, monkeypatch):
-    factory = auto_factory(tmp_path)
-    with factory() as database, database.begin():
-        database.add(Source(
-            name="Permitted article index", canonical_domain="town.example",
-            feed_url="https://town.example/", source_type="html_index",
-            extraction_strategy="index_links", can_discover=True, can_fetch=True,
-            can_store=True, permission_basis="Permitted to collect article links",
-            permission_reviewed_at=NOW - timedelta(days=1),
-        ))
-    requested = []
-
-    def respond(request):
-        requested.append(request.url.path)
-        if request.url.path == "/robots.txt":
-            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
-        return httpx.Response(200, text="<article><a href='/news/one'>Local notice</a></article>")
-
-    transport = httpx.MockTransport(respond)
-    options = dict(transport=transport, resolver=lambda host, port: ["93.184.215.14"])
-    monkeypatch.setattr("greek_news.jobs.verify_candidate", lambda database, source, *, now:
-                        verify_candidate(database, source, now=now, **options))
-    monkeypatch.setattr("greek_news.jobs.poll_source", lambda database, source:
-                        poll_source(database, source, **options))
-    result = run_once(factory, Settings(_env_file=None, source_catalog_path=""), now=NOW)
-    assert result == {"scheduled": 2, "succeeded": 2, "failed": 0}, result
-    assert requested == ["/robots.txt", "/", "/robots.txt", "/"]
-    with factory() as database:
-        assert database.scalar(select(Source)).enabled
-        assert database.scalar(select(func.count()).select_from(SourceItem)) == 1
-        assert database.scalar(select(func.count()).select_from(Article)) == 0
-        assert set(database.scalars(select(Job.kind))) == {"discover", "poll"}
-
-
 def test_catalog_job_adds_new_candidates_while_other_jobs_continue(tmp_path):
     factory = auto_factory(tmp_path)
     catalog = tmp_path / "sources.json"
     candidate = {"name": "Regional candidate", "canonical_domain": "region.example",
-                 "feed_url": "https://region.example/rss", "coverage_ids": ["GR-region"]}
+                 "feed_url": "https://region.example/", "coverage_ids": ["GR-region"]}
     catalog.write_text(json.dumps({"sources": [candidate]}), encoding="utf-8")
     settings = Settings(_env_file=None, source_catalog_path=str(catalog))
     result = run_once(factory, settings, now=NOW)
-    assert result["succeeded"] == 1, result
+    assert result["succeeded"] == 2, result
     with factory() as database:
         source = database.scalar(select(Source).where(Source.name == "Regional candidate"))
         assert source and not source.enabled and source.coverage_ids == ["GR-region"]
@@ -287,20 +252,20 @@ def test_default_worker_imports_catalog_without_authorizing_polling(tmp_path):
     factory = auto_factory(tmp_path)
     settings = Settings(_env_file=None)
     first = run_once(factory, settings, now=NOW)
-    assert first == {"scheduled": 1, "succeeded": 1, "failed": 0}
+    assert first == {"scheduled": 2, "succeeded": 2, "failed": 0}
     with factory() as database:
         sources = database.scalars(select(Source)).all()
         assert len(sources) > 60
         assert all(not source.enabled and not source.can_fetch and not source.can_process_ai
                    for source in sources)
-        assert database.scalars(select(Job.kind)).all() == ["catalog"]
+        assert set(database.scalars(select(Job.kind))) == {"catalog", "maintenance"}
         assert database.scalar(select(func.count()).select_from(Article)) == 0
     assert run_once(factory, settings, now=NOW) == {"scheduled": 0, "succeeded": 0, "failed": 0}
     with factory() as database:
         assert database.scalar(select(func.count()).select_from(Source)) == len(sources)
 
 
-def test_expired_model_lease_is_not_called_twice(session):
+def test_expired_model_lease_recovers_automatically_with_bounded_new_attempt(session):
     settings = Settings(_env_file=None)
     job = enqueue(session, "generate", {"story_id": "manual"}, "generate:manual", next_run_at=NOW)
     session.flush()
@@ -308,8 +273,8 @@ def test_expired_model_lease_is_not_called_twice(session):
     reserve_generation(session, job.id, settings, now=NOW)
     session.commit()
     with Session(session.get_bind()) as database:
-        assert claim_due(database, now=NOW + timedelta(minutes=6)) == []
-        assert database.get(Job, job.id).state == "failed"
+        assert claim_due(database, now=NOW + timedelta(minutes=31)) == [job.id]
+        assert database.get(Job, job.id).state == "running"
         assert database.scalar(select(LLMCall)).status == "uncertain"
         try:
             retry_failed(database, job.id)
@@ -346,7 +311,7 @@ def test_poll_failure_commits_source_backoff_and_failed_job(session, monkeypatch
     job_id, source_id = job.id, owner.id
     session.commit()
 
-    def failed_poll(database, source):
+    def failed_poll(database, source, **kwargs):
         source.consecutive_failures += 1
         source.next_poll_at = NOW + timedelta(minutes=5)
         return PollResult("failed", reason="HTTP 429")

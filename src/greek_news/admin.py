@@ -5,7 +5,7 @@ from datetime import datetime
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, ValidationError, model_validator
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -24,6 +24,7 @@ from greek_news.publishing import (
 from greek_news.security import Actor, require_admin, require_editor
 from greek_news.stories import ATHENS, independent_origins, refresh_story
 from greek_news.validation import validate_draft
+from greek_news.taxonomy import CATEGORIES
 
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -34,9 +35,16 @@ class SourceConfig(BaseModel):
 
     name: str = Field(min_length=1, max_length=200)
     canonical_domain: str
-    feed_url: str
-    source_type: str = "rss"
-    extraction_strategy: str = "feed_metadata"
+    feed_url: str = Field(validation_alias=AliasChoices("entry_url", "feed_url"))
+    source_type: str = "html"
+    extraction_strategy: str = "article_html"
+    country_code: str = Field(default="GR", pattern=r"^[A-Z]{2}$")
+    locality_hint: str = ""
+    entry_urls: list[str] = Field(default_factory=list, max_length=12)
+    article_url_pattern: str | None = None
+    index_url_pattern: str | None = None
+    link_selector: str | None = None
+    is_directory: bool = False
     language: str = "el"
     coverage_ids: list[str] = Field(default_factory=list)
     enabled: bool = False
@@ -65,24 +73,24 @@ class SourceConfig(BaseModel):
         if (url.scheme != "https" or url.hostname != self.canonical_domain
                 or url.username or url.password or url.port not in {None, 443}):
             raise ValueError("Source URL must use its registered HTTPS domain")
-        if self.source_type not in {"rss", "atom", "html_index"}:
+        if self.source_type not in {"html", "html_index"}:
             raise ValueError("Unsupported source type")
         if self.enabled and (
             self.operator_disabled or
-            self.source_type not in {"rss", "atom"}
-            or self.extraction_strategy not in {"feed_metadata", "feed_summary", "approved_html"}
+            self.source_type not in {"html", "html_index"}
+            or self.extraction_strategy not in {"article_html", "index_links"}
             or not all((self.can_discover, self.can_fetch, self.can_store))
             or not self.permission_basis.strip() or not self.permission_reviewed_at
             or not self.endpoint_verified_at
             or self.permission_expires_at and self.permission_expires_at <= utc_now()
         ):
-            raise ValueError("Activation requires a verified feed and reviewed discovery/fetch/storage rights")
+            raise ValueError("Activation requires automatically verified HTML and a current factual reporting policy")
         return self
 
 
 def source_record(source: Source) -> dict:
     return {**{key: getattr(source, key) for key in SourceConfig.model_fields},
-            "id": source.id, "last_successful_fetch": source.last_successful_fetch,
+            "id": source.id, "entry_url": source.feed_url, "last_successful_fetch": source.last_successful_fetch,
             "last_successful_extraction": source.last_successful_extraction,
             "last_new_item": source.last_new_item, "last_status_code": source.last_status_code,
             "consecutive_failures": source.consecutive_failures,
@@ -508,12 +516,12 @@ def configure_policy(
         if not source:
             raise HTTPException(status_code=404, detail="Source not found")
         if payload.enabled and (
-            payload.topic not in {"services", "events", "transport"}
+            payload.topic not in CATEGORIES
             or
-            not source.enabled or not source.can_process_ai or not payload.pilot_approved_at
+            not source.enabled or not source.can_process_ai 
             or not source.permission_reviewed_at or source.source_type == "fixture"
         ):
-            raise HTTPException(status_code=409, detail="Reviewed real-source pilot required")
+            raise HTTPException(status_code=409, detail="Enabled HTML source and known category required")
         policy = session.scalar(select(PublicationPolicy).where(
             PublicationPolicy.source_id == payload.source_id,
             PublicationPolicy.topic == payload.topic,
@@ -592,7 +600,11 @@ def operational_metrics(
     accepted = session.scalar(select(func.count()).select_from(Article).where(
         Article.status.in_(["approved", "published"]),
     ))
-    priced = settings.input_cost_per_million is not None and settings.output_cost_per_million is not None
+    from greek_news.budget import model_prices
+    priced = model_prices(settings) is not None
+    daily_accepted = session.scalar(select(func.count()).select_from(Article).where(
+        Article.status.in_(["approved", "published"]), Article.created_at >= now.replace(hour=0, minute=0, second=0, microsecond=0),
+    ))
     usage = {
         "calls_reserved": day.calls_reserved if day else 0,
         "tokens_reserved": day.tokens_reserved if day else 0,
@@ -601,7 +613,7 @@ def operational_metrics(
         "output_tokens_used": day.output_tokens_used if day else 0,
         "cost_usd": day.cost_usd if day and priced else None,
         "cost_per_accepted_article_usd": (
-            day.cost_usd / accepted if day and priced and accepted and day.cost_usd is not None
+            day.cost_usd / daily_accepted if day and priced and daily_accepted and day.cost_usd is not None
             else None
         ),
         "cost_available": priced,

@@ -1,267 +1,195 @@
-import json
-from datetime import datetime, timezone
-from pathlib import Path
+"""HTML collector behavior, source policy, backoff, detail extraction and idempotency."""
 
+import json
+import socket
+from datetime import timedelta
+from pathlib import Path
 import httpx
 import pytest
 from sqlalchemy import func, select
-
+from greek_news.config import Settings
+from greek_news.db import utc_now, use_clock
 from greek_news.discovery import CatalogCandidate, SourceCatalog, import_catalog, verify_candidate
-from greek_news.models import AuditEntry
-from greek_news.models import Source, SourceItem, SourceRevision
-from greek_news.polling import poll_source
+from greek_news.html_pages import document, parse_article
+from greek_news.models import CrawlURL, Source, SourceItem, SourceRevision
+from greek_news.polling import fetch_frontier, poll_source
 
-
-FEED = b"""<?xml version="1.0"?><rss version="2.0"><channel><title>Notices</title>
-<item><title>Notice A</title><link>https://source.example/a</link><guid>bad-guid</guid>
-<pubDate>Thu, 08 Oct 2026 09:00:00 +0300</pubDate></item>
-<item><title>Notice B</title><link>https://source.example/b</link><guid>bad-guid</guid>
-<pubDate>Thu, 08 Oct 2026 09:00:00 +0300</pubDate></item>
-</channel></rss>"""
+INDEX = b'''<html><body><main><div><h2><a href="/news/local-notice">Local water service notice in Patras</a></h2></div><article><a href="/news/another-report">Second useful local community report</a></article><nav><a href="/about">About</a><a href="/feed/">RSS</a></nav></main></body></html>'''
+ARTICLE = '''<html lang="el"><head><meta property="og:type" content="article"><script type="application/ld+json">{"@type":"NewsArticle","headline":"Πάτρα: Προγραμματισμένη διακοπή νερού","datePublished":"2026-10-09T12:00:00+03:00","dateModified":"2026-10-09T12:30:00+03:00"}</script></head><body><article><h1>Πάτρα: Προγραμματισμένη διακοπή νερού</h1><p>Στην Πάτρα ανακοινώθηκε προγραμματισμένη διακοπή νερού λόγω εργασιών στο δίκτυο ύδρευσης. Η υπηρεσία ενημερώνει τους κατοίκους για τις εργασίες.</p><p>Οι κάτοικοι μπορούν να διαβάσουν τη σχετική ανακοίνωση για την ενημέρωσή τους. Νεότερη ανακοίνωση θα δημοσιευτεί αν προκύψει αλλαγή στο πρόγραμμα.</p></article></body></html>'''
+def RESOLVER(host, port):
+    return ["93.184.215.14"]
 
 
 def eligible_source():
-    return Source(
-        name="Feed test", canonical_domain="source.example", feed_url="https://source.example/feed",
-        source_type="rss", extraction_strategy="feed_metadata", enabled=True,
-        can_discover=True, can_fetch=True, can_store=True,
-        permission_basis="Synthetic feed created for this test",
-        permission_reviewed_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        endpoint_verified_at=datetime(2026, 10, 1, tzinfo=timezone.utc),
-    )
+    now = utc_now()
+    return Source(name="HTML test", canonical_domain="source.example", feed_url="https://source.example/",
+                  source_type="html", extraction_strategy="article_html", enabled=True,
+                  can_discover=True, can_fetch=True, can_store=True, can_process_ai=True,
+                  permission_basis="Synthetic public HTML for this test", permission_reviewed_at=now - timedelta(days=1),
+                  endpoint_verified_at=now - timedelta(hours=1))
 
 
-def test_poll_handles_duplicate_guids_dates_and_etag(session):
-    seen = []
-
+def transport_for(body=INDEX, *, etag=None, robots="User-agent: *\nAllow: /\n", seen=None):
     def respond(request):
-        seen.append((request.url.path, request.headers.get("If-None-Match")))
+        if seen is not None:
+            seen.append((request.url.path, request.headers.get("If-None-Match")))
         if request.url.path == "/robots.txt":
-            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
-        if request.headers.get("If-None-Match") == '"v1"':
+            return httpx.Response(200, text=robots)
+        if etag and request.headers.get("If-None-Match") == etag:
             return httpx.Response(304)
-        return httpx.Response(200, content=FEED, headers={"ETag": '"v1"'})
+        return httpx.Response(200, content=body.encode() if isinstance(body, str) else body,
+                              headers={"Content-Type": "text/html", **({"ETag": etag} if etag else {})})
+    return httpx.MockTransport(respond)
 
+
+def test_indexes_find_links_outside_article_tags_and_never_store_menu_text(session):
     source = eligible_source()
     session.add(source)
     session.flush()
-    options = dict(transport=httpx.MockTransport(respond),
-                   resolver=lambda host, port: ["93.184.215.14"])
-    first = poll_source(session, source, **options)
-    assert (first.state, first.new, first.skipped) == ("ok", 2, 0)
-    assert session.scalar(select(func.count()).select_from(SourceItem)) == 2
-    assert {item.source_published_at for item in session.scalars(select(SourceItem))} == {
-        datetime(2026, 10, 8, 6, tzinfo=timezone.utc)
-    }
-    source.next_poll_at = None
-    assert poll_source(session, source, **options).state == "unchanged"
-    assert ("/feed", '"v1"') in seen
+    result = poll_source(session, source, transport=transport_for(), resolver=RESOLVER)
+    assert result.state == "ok" and result.new == 2
+    rows = session.scalars(select(CrawlURL)).all()
+    assert {row.url for row in rows} == {"https://source.example/news/local-notice", "https://source.example/news/another-report"}
+    assert all(row.kind == "article" for row in rows)
+    assert session.scalar(select(func.count()).select_from(SourceItem)) == 0
 
 
-def test_html_index_collects_article_links_without_copying_text(session):
-    paths = []
-
-    def respond(request):
-        paths.append(request.url.path)
-        if request.url.path == "/robots.txt":
-            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
-        return httpx.Response(200, text="""<main>
-            <article><h2><a href="/news/local-notice">Local notice</a></h2></article>
-            <article><a href="https://source.example/news/second">Second notice</a></article>
-            <article><a href="https://outside.example/news">Foreign notice</a></article>
-            <nav><a href="/about">About us</a></nav>
-        </main>""")
-
-    source = eligible_source()
-    source.feed_url = "https://source.example/"
-    source.source_type = "html_index"
-    source.extraction_strategy = "index_links"
-    session.add(source)
-    session.flush()
-    outcome = poll_source(session, source, transport=httpx.MockTransport(respond),
-                          resolver=lambda host, port: ["93.184.215.14"])
-    assert (outcome.state, outcome.new) == ("ok", 2)
-    assert paths == ["/robots.txt", "/"]
-    items = session.scalars(select(SourceItem)).all()
-    assert {item.canonical_url for item in items} == {
-        "https://source.example/news/local-notice", "https://source.example/news/second",
-    }
-    assert all(not revision.permitted_text and not revision.evidence_claims
-               for revision in session.scalars(select(SourceRevision)))
-
-
-def test_html_index_verification_requires_grant_and_article_links(session):
-    source = eligible_source()
-    source.feed_url = "https://source.example/"
-    source.source_type = "html_index"
-    source.extraction_strategy = "index_links"
-    source.enabled = False
-    source.endpoint_verified_at = None
-    session.add(source)
-    session.flush()
-    never = httpx.MockTransport(lambda request: (_ for _ in ()).throw(AssertionError("network used")))
-    source.permission_basis = ""
-    assert verify_candidate(session, source, transport=never).state == "blocked"
-    source.permission_basis = "Authorized to collect headline links"
-    requested = []
-
-    def respond(request):
-        requested.append(request.url.path)
-        if request.url.path == "/robots.txt":
-            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
-        return httpx.Response(200, text="<article><a href='/notice'>Local notice</a></article>")
-
-    result = verify_candidate(session, source, transport=httpx.MockTransport(respond),
-                              resolver=lambda host, port: ["93.184.215.14"])
-    assert result.state == "active" and source.enabled
-    assert source.endpoint_verified_at and requested == ["/robots.txt", "/"]
-
-
-def test_robots_denial_never_fetches_feed(session):
-    calls = []
-
-    def respond(request):
-        calls.append(request.url.path)
-        return httpx.Response(200, text="User-agent: *\nDisallow: /feed\n")
-
+def test_index_conditional_get_does_not_redownload_known_pages(session):
     source = eligible_source()
     session.add(source)
     session.flush()
-    result = poll_source(session, source, transport=httpx.MockTransport(respond),
-                         resolver=lambda host, port: ["93.184.215.14"])
+    seen = []
+    transport = transport_for(etag='"v1"', seen=seen)
+    assert poll_source(session, source, transport=transport, resolver=RESOLVER).new == 2
+    with use_clock(utc_now() + timedelta(minutes=31)):
+        assert poll_source(session, source, transport=transport, resolver=RESOLVER).state == "unchanged"
+    assert ("/", '"v1"') in seen
+    assert len([path for path, _ in seen if path == "/robots.txt"]) == 1
+
+
+def test_detail_html_extracts_content_dates_and_keeps_revisions_idempotent(session):
+    source = eligible_source()
+    session.add(source)
+    session.flush()
+    assert poll_source(session, source, transport=transport_for(), resolver=RESOLVER).state == "ok"
+    row = session.scalar(select(CrawlURL).where(CrawlURL.url.endswith("local-notice")))
+    with use_clock(utc_now() + timedelta(seconds=3)):
+        result = fetch_frontier(session, row, Settings(_env_file=None), transport=transport_for(ARTICLE), resolver=RESOLVER)
+    assert result.new == 1
+    item = session.get(SourceItem, row.source_item_id)
+    revision = session.scalar(select(SourceRevision))
+    assert item.source_published_at.hour == 9 and revision.permitted_text
+    assert revision.evidence_claims == [] and revision.analysis_state == "pending"
+    assert revision.analysis["html_metadata"]["publication_time_verified"]
+    with use_clock(utc_now() + timedelta(hours=7)):
+        result = fetch_frontier(session, row, Settings(_env_file=None), transport=transport_for(ARTICLE), resolver=RESOLVER)
+    assert result.new == result.revised == 0
+    assert session.scalar(select(func.count()).select_from(SourceRevision)) == 1
+
+
+def test_robots_denial_never_fetches_html(session):
+    source = eligible_source()
+    session.add(source)
+    session.flush()
+    seen = []
+    result = poll_source(session, source, transport=transport_for(robots="User-agent: *\nDisallow: /\n", seen=seen), resolver=RESOLVER)
     assert result.state == "failed" and "Robots" in result.reason
-    assert calls == ["/robots.txt"]
+    assert seen == [("/robots.txt", None)]
 
 
-def test_new_eligible_candidate_activates_without_manual_approval(session):
-    requested = []
-
-    def respond(request):
-        requested.append(request.url.path)
-        if request.url.path == "/robots.txt":
-            return httpx.Response(200, text="User-agent: *\nAllow: /\n")
-        return httpx.Response(200, content=FEED)
-
-    candidate = eligible_source()
-    candidate.enabled = False
-    candidate.endpoint_verified_at = None
-    candidate.can_process_ai = True
-    session.add(candidate)
-    session.flush()
-    result = verify_candidate(session, candidate,
-                              now=datetime(2026, 10, 9, 10, tzinfo=timezone.utc),
-                              transport=httpx.MockTransport(respond),
-                              resolver=lambda host, port: ["93.184.215.14"])
-    assert result.state == "active" and candidate.enabled
-    assert candidate.endpoint_verified_at and requested == ["/robots.txt", "/feed"]
-    assert session.scalar(select(AuditEntry).where(AuditEntry.action == "source_activated"))
-
-
-def test_candidate_without_grant_or_with_operator_pause_never_fetches(session):
-    candidate = eligible_source()
-    candidate.enabled = False
-    candidate.endpoint_verified_at = None
-    candidate.can_process_ai = True
-    session.add(candidate)
-    session.flush()
-    never = httpx.MockTransport(lambda request: (_ for _ in ()).throw(AssertionError("network used")))
-    candidate.permission_basis = ""
-    assert verify_candidate(session, candidate, transport=never).state == "blocked"
-    candidate.permission_basis = "Original authorized feed"
-    candidate.operator_disabled = True
-    assert verify_candidate(session, candidate, transport=never).state == "blocked"
-
-
-def test_repeated_poll_failures_disable_source_for_automatic_reverification(session):
+def test_automatic_verification_accepts_html_and_no_editor_click(session):
     source = eligible_source()
-    source.can_process_ai = True
+    source.enabled, source.endpoint_verified_at = False, None
+    session.add(source)
+    session.flush()
+    result = verify_candidate(session, source, transport=transport_for(), resolver=RESOLVER)
+    assert result.state == "active" and source.enabled and source.endpoint_verified_at
+
+
+def test_automatic_verification_rejects_rss_even_when_mislabeled_html(session):
+    source = eligible_source()
+    source.enabled, source.endpoint_verified_at = False, None
+    session.add(source)
+    session.flush()
+    result = verify_candidate(session, source, transport=transport_for(b'<rss version="2.0"><channel/></rss>'), resolver=RESOLVER)
+    assert result.state == "deferred" and not source.enabled
+    with pytest.raises(ValueError, match="HTML"):
+        document(b'{"news": []}', "application/json")
+
+
+def test_dns_failure_is_a_bounded_health_failure(session):
+    source = eligible_source()
+    session.add(source)
+    session.flush()
+    def unavailable(*args):
+        raise socket.gaierror("DNS failure")
+    result = poll_source(session, source, transport=transport_for(), resolver=unavailable)
+    assert result.state == "failed" and source.next_poll_at > utc_now()
+    assert source.consecutive_failures == 1
+
+
+def test_repeated_failures_trigger_automatic_reverification(session):
+    source = eligible_source()
     session.add(source)
     session.flush()
     transport = httpx.MockTransport(lambda request: httpx.Response(503))
     for _ in range(5):
-        source.next_poll_at = None
-        assert poll_source(session, source, transport=transport,
-                           resolver=lambda host, port: ["93.184.215.14"]).state == "failed"
-    assert not source.enabled and source.consecutive_failures == 5
-    assert session.scalar(select(AuditEntry).where(AuditEntry.action == "source_auto_disabled"))
+        source.next_poll_at = source.next_request_at = None
+        assert poll_source(session, source, transport=transport, resolver=RESOLVER).state == "failed"
+    assert not source.enabled and source.endpoint_verified_at is None
+    assert source.next_poll_at > utc_now()
 
 
-def test_catalog_discovers_candidates_idempotently_without_making_grants(tmp_path, session):
-    catalog = tmp_path / "candidates.json"
-    catalog.write_text('{"sources":[{"name":"Community candidate",'
-                       '"canonical_domain":"community.example",'
-                       '"feed_url":"https://community.example/rss",'
-                       '"coverage_ids":["fixture-2026-demo:r-west-greece"]}]}',
-                       encoding="utf-8")
-    assert import_catalog(session, catalog) == 1
-    assert import_catalog(session, catalog) == 0
-    source = session.scalar(select(Source).where(Source.name == "Community candidate"))
-    assert not source.enabled and not source.can_process_ai and not source.permission_basis
-    assert source.coverage_ids == ["fixture-2026-demo:r-west-greece"]
-    assert "rights: unverified" in source.verification_note
-    assert session.scalar(select(AuditEntry).where(
-        AuditEntry.action == "source_discovered",
-    )).detail["rights_status"] == "unverified"
+def test_host_cadence_defers_articles_instead_of_sleeping(session):
+    source = eligible_source()
+    session.add(source)
+    session.flush()
+    poll_source(session, source, transport=transport_for(), resolver=RESOLVER)
+    row = session.scalar(select(CrawlURL))
+    never = httpx.MockTransport(lambda request: (_ for _ in ()).throw(AssertionError("No early fetch")))
+    assert fetch_frontier(session, row, Settings(_env_file=None), transport=never, resolver=RESOLVER).state == "deferred"
+    assert row.next_fetch_at > utc_now()
 
 
-def test_catalog_cannot_claim_permission_without_documented_grant():
-    with pytest.raises(ValueError, match="documented grant"):
-        CatalogCandidate(name="Unknown rights", canonical_domain="local.example",
-                         feed_url="https://local.example/rss", can_fetch=True)
+def test_html_metadata_and_canonical_cannot_move_to_another_host():
+    content = ARTICLE.replace('<head>', '<head><link rel="canonical" href="https://evil.example/copied">')
+    item, meta = parse_article(content.encode(), "https://source.example/news/one", "source.example")
+    assert item.url == "https://source.example/news/one"
+    assert item.updated_at > item.published_at and meta["date_precision"] == "timestamp"
 
 
-def test_catalog_upgrades_only_untouched_homepage_candidates(tmp_path, session):
+def test_script_only_or_paywalled_page_is_skipped():
+    with pytest.raises(ValueError, match="too little"):
+        parse_article(b'<html><h1>Subscribe for this news</h1><script>load()</script></html>',
+                      "https://source.example/story", "source.example")
+
+
+def test_public_fact_catalog_is_automatic_without_claiming_reuse_license(session, tmp_path):
     path = tmp_path / "sources.json"
-    names = {"Untouched": "untouched.example", "Configured": "configured.example",
-             "Paused": "paused.example"}
-    path.write_text(json.dumps({"sources": [
-        {"name": name, "canonical_domain": domain, "feed_url": f"https://{domain}/",
-         "source_type": "html_index", "extraction_strategy": "requires_site_plugin"}
-        for name, domain in names.items()
-    ]}), encoding="utf-8")
-    assert import_catalog(session, path) == 3
-    configured = session.scalar(select(Source).where(Source.name == "Configured"))
-    configured.permission_basis = "Operator-reviewed use"
-    configured.can_fetch = True
-    paused = session.scalar(select(Source).where(Source.name == "Paused"))
-    paused.operator_disabled = True
-    path.write_text(json.dumps({"sources": [
-        {"name": name, "canonical_domain": domain,
-         "feed_url": f"https://{domain}/feed/"} for name, domain in names.items()
-    ]}), encoding="utf-8")
-    assert import_catalog(session, path) == 0
-    assert import_catalog(session, path) == 0
-    untouched = session.scalar(select(Source).where(Source.name == "Untouched"))
-    assert untouched.feed_url == "https://untouched.example/feed/"
-    assert untouched.source_type == "rss" and not untouched.enabled and not untouched.can_fetch
-    assert configured.feed_url == "https://configured.example/" and configured.can_fetch
-    assert paused.feed_url == "https://paused.example/" and paused.operator_disabled
-    assert session.scalar(select(func.count()).select_from(Source)) == 3
-    assert session.scalar(select(func.count()).select_from(AuditEntry).where(
-        AuditEntry.action == "source_endpoint_discovered")) == 1
+    path.write_text(json.dumps({"sources": [{"name": "Community", "canonical_domain": "town.example",
+                                           "feed_url": "https://town.example/", "rights_status": "public_facts"}]}))
+    settings = Settings(_env_file=None, public_html_enabled=True)
+    assert import_catalog(session, path, settings) == 1
+    assert import_catalog(session, path, settings) == 0
+    source = session.scalar(select(Source))
+    assert not source.enabled and source.can_fetch and source.can_process_ai
+    assert not source.can_reuse_text and not source.can_reuse_images
+    assert "not a redistribution license" in source.permission_basis
 
 
-def test_bundled_source_catalog_covers_every_region_without_granting_rights(session):
-    path = Path(__file__).resolve().parents[1] / "fixtures" / "source_catalog.json"
-    catalog = SourceCatalog.model_validate_json(path.read_text(encoding="utf-8"))
-    assert len(catalog.sources) > 60
-    assert len({candidate.name for candidate in catalog.sources}) == len(catalog.sources)
-    assert len({candidate.canonical_domain for candidate in catalog.sources}) == len(catalog.sources)
-    assert len({candidate.feed_url for candidate in catalog.sources}) == len(catalog.sources)
-    regions = {
-        "attica", "central_macedonia", "west_macedonia", "east_macedonia_thrace",
-        "epirus", "thessaly", "ionian_islands", "west_greece", "central_greece",
-        "peloponnese", "north_aegean", "south_aegean", "crete",
-    }
-    assert {candidate.target_region for candidate in catalog.sources} >= regions | {"national", "global"}
-    feed_regions = {candidate.target_region for candidate in catalog.sources
-                    if candidate.source_type in {"rss", "atom"}}
-    assert feed_regions >= regions | {"national", "global"}, regions - feed_regions
-    assert {"Ta Nea", "Skai", "CNN Greece", "Proto Thema", "To Vima",
-            "Efsyn"} <= {candidate.name for candidate in catalog.sources}
-    assert import_catalog(session, path) == len(catalog.sources)
-    assert import_catalog(session, path) == 0
-    assert all(not any((source.enabled, source.can_discover, source.can_fetch,
-                        source.can_store, source.can_process_ai, source.can_reuse_text,
-                        source.can_reuse_images))
-               and source.coverage_ids == [] for source in session.scalars(select(Source)))
+def test_verbatim_or_image_license_cannot_be_inferred_from_public_html():
+    with pytest.raises(ValueError, match="documented grant"):
+        CatalogCandidate(name="Reuse", canonical_domain="town.example", feed_url="https://town.example/", can_reuse_images=True)
+    with pytest.raises(ValueError):
+        CatalogCandidate(name="Feed", canonical_domain="town.example", feed_url="https://town.example/", source_type="rss")
+
+
+def test_catalog_covers_every_greek_region_and_international_sources():
+    data = SourceCatalog.model_validate_json(Path("fixtures/source_catalog.json").read_text())
+    regions = {"attica", "central_macedonia", "west_macedonia", "east_macedonia_thrace", "epirus", "thessaly",
+               "ionian_islands", "west_greece", "central_greece", "peloponnese", "north_aegean", "south_aegean", "crete"}
+    assert {row.target_region for row in data.sources} >= regions | {"national", "global"}
+    assert len(data.sources) >= 90 and all(row.source_type == "html" for row in data.sources)
+    assert len({row.feed_url for row in data.sources}) == len(data.sources)
+    assert all("/feed" not in row.feed_url and ".rss" not in row.feed_url for row in data.sources)
+    assert len({row.country_code for row in data.sources}) >= 10

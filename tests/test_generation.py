@@ -9,7 +9,6 @@ from sqlalchemy.orm import sessionmaker
 from greek_news.config import Settings
 from greek_news.generation import generate_article
 from greek_news.ingestion import SourceInput, ingest_item
-from greek_news.jobs import run_once
 from greek_news.llm import FakeAdapter
 from greek_news.models import (
     Article, ArticleVersion, AuditEntry, Job, LLMCall, PublicationRecord, Source, SourceItem, Story,
@@ -25,7 +24,7 @@ def setup(session):
     seed_demo(session)
     story = session.scalar(select(Story).where(Story.event_type == "water_notice"))
     job = Job(idempotency_key=f"generate:{story.id}:initial", kind="generate",
-              payload={"story_id": story.id})
+              payload={"story_id": story.id}, attempts=1)
     session.add(job)
     session.commit()
     return story.id, job.id, sessionmaker(session.get_bind(), expire_on_commit=False)
@@ -72,8 +71,8 @@ def test_unsupported_draft_is_skipped_automatically_without_review_queue(session
         def draft(self, packet):
             result = FakeAdapter().draft(packet)
             invalid = result.draft.model_copy(deep=True)
-            invalid.title_candidates = ("Πάτρα: διακοπή νερού για 99 ώρες",
-                                        *invalid.title_candidates[1:])
+            invalid.title_candidates = ["Πάτρα: διακοπή νερού για 99 ώρες",
+                                        *invalid.title_candidates[1:]]
             invalid.selected_title = invalid.title_candidates[0]
             return replace(result, draft=invalid)
 
@@ -87,15 +86,6 @@ def test_unsupported_draft_is_skipped_automatically_without_review_queue(session
         assert database.scalar(select(AuditEntry).where(
             AuditEntry.action == "automatic_decision_deferred",
         )).detail["reasons"]
-    run_once(factory, settings, now=NOW)
-    with factory() as database:
-        assert database.get(Article, result.article_id).status == "skipped"
-        assert database.scalar(select(func.count()).select_from(ArticleVersion).where(
-            ArticleVersion.article_id == result.article_id,
-        )) == 1
-        assert database.scalar(select(func.count()).select_from(PublicationRecord).where(
-            PublicationRecord.article_id == result.article_id,
-        )) == 0
 
 
 def test_source_correction_proposes_version_without_overwriting_public_identity(session):

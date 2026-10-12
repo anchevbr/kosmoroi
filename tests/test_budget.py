@@ -36,7 +36,7 @@ def test_limits_are_reserved_atomically_across_workers(tmp_path):
     with Session(engine) as session:
         assert session.scalar(select(func.count()).select_from(LLMCall)) == 1
         day = session.scalar(select(DailyBudget))
-        assert day.tokens_reserved == 100 and day.cost_usd is None
+        assert day.tokens_reserved == 100 and day.cost_usd == 0
     engine.dispose()
 
 

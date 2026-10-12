@@ -144,8 +144,8 @@ def test_national_and_regional_selection_budgets_do_not_create_quotas(session):
     from greek_news.seeds import seed_demo
 
     seed_demo(session)
-    selected = select_candidates(session, now=START, national_max=1, regional_max=1)
+    selected = select_candidates(session, now=datetime(2026, 10, 9, 10, tzinfo=timezone.utc), national_max=1, regional_max=1)
     assert {story.audience_scope for story in selected} == {"national", "local"}
     assert len(selected) == 2
-    assert not select_candidates(session, now=START, national_max=0, regional_max=0)
-    assert len(select_candidates(session, now=START, national_max=10, regional_max=10)) == 2
+    assert not select_candidates(session, now=datetime(2026, 10, 9, 10, tzinfo=timezone.utc), national_max=0, regional_max=0)
+    assert len(select_candidates(session, now=datetime(2026, 10, 9, 10, tzinfo=timezone.utc), national_max=10, regional_max=10)) == 2

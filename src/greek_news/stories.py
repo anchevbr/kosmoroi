@@ -9,7 +9,7 @@ from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from greek_news.db import utc_now
-from greek_news.geography import AmbiguousPlace, normalize_name, region_of, resolve_place
+from greek_news.geography import AmbiguousPlace, country_of, normalize_name, region_of, resolve_place
 from greek_news.ingestion import PlaceHint
 from greek_news.models import Place, Source, SourceItem, SourceRevision, Story, StoryPlace
 
@@ -48,11 +48,17 @@ def _resolve_hints(
 
 
 def _scope(session: Session, item: SourceItem, resolved: list[tuple[Place, str]]) -> str:
+    if item.audience_scope == "international":
+        return "international"
+    if any((country_of(session, place) is not None
+            and country_of(session, place).official_id != "GR")
+           for place, role in resolved if role in {"affected", "occurred"}):
+        return "international"
     if item.audience_scope == "national":
         return "national"
     relevant = [place for place, role in resolved if role in {"occurred", "affected"}]
     if not relevant:
-        return "unknown"
+        return item.audience_scope
     if len({region_of(session, place).id for place in relevant}) > 1:
         return "mixed"
     if all(place.kind in {"region", "regional_unit"} for place in relevant):
@@ -129,6 +135,14 @@ def refresh_story(session: Session, story: Story, register_id: str) -> None:
         story.audience_scope = _scope(session, items[0], [
             (place, role) for (place_id, role), place in locations.items()
         ])
+        event_starts = {item.event_at for item in items if item.event_at}
+        event_ends = {item.event_until for item in items if item.event_until}
+        story.event_at = next(iter(event_starts)) if len(event_starts) == 1 else None
+        story.event_until = next(iter(event_ends)) if len(event_ends) == 1 else None
+        if len(event_starts) > 1 or len(event_ends) > 1:
+            story.conflict = True
+        story.topic = items[0].topic
+        story.event_type = items[0].event_type
     story.status = "skipped" if story.conflict or "ambiguous_geography" in risks else "new"
     story.updated_at = utc_now()
 
@@ -139,6 +153,8 @@ def group_item(session: Session, item: SourceItem, register_id: str) -> Story | 
         refresh_story(session, story, register_id)
         return story
     reference_time = item.event_at or item.source_published_at
+    if reference_time is None and revision_ready(session, item):
+        reference_time = item.discovered_at
     if reference_time is None:
         return None
     anchor_day = reference_time.astimezone(ATHENS).date()
@@ -195,10 +211,15 @@ def group_item(session: Session, item: SourceItem, register_id: str) -> Story | 
     return story
 
 
+def revision_ready(session, item):
+    revision = _revision(session, item)
+    return bool(revision and revision.analysis_state == "completed" and revision.analysis)
+
+
 def rank_story(session: Session, story: Story, now: datetime | None = None) -> tuple[int, str]:
     now = now or utc_now()
     items = session.scalars(select(SourceItem).where(SourceItem.story_id == story.id)).all()
-    dated = [item.source_published_at for item in items if item.source_published_at]
+    dated = [item.source_published_at or item.discovered_at for item in items if item.source_published_at or revision_ready(session, item)]
     age_hours = max(0, (now - max(dated)).total_seconds() / 3600) if dated else 10000
     freshness = 3 if age_hours <= 24 else 1 if age_hours <= 72 else 0
     evidence = sum(len(_revision(session, item).evidence_claims) for item in items)
@@ -215,13 +236,16 @@ def rank_story(session: Session, story: Story, now: datetime | None = None) -> t
 def select_candidates(
     session: Session, *, now: datetime | None = None,
     national_max: int = 5, regional_max: int = 2, minimum_score: int = 4,
+    international_max: int = 10, general_max: int = 3,
 ) -> list[Story]:
     now = now or utc_now()
     national: list[Story] = []
+    international: list[Story] = []
+    general: list[Story] = []
     regional: dict[str, list[Story]] = {}
     for story in session.scalars(select(Story).where(Story.status == "new")):
         items = session.scalars(select(SourceItem).where(SourceItem.story_id == story.id)).all()
-        dated = [item.source_published_at for item in items if item.source_published_at]
+        dated = [item.source_published_at or item.discovered_at for item in items if item.source_published_at or revision_ready(session, item)]
         if (not dated or story.conflict or "ambiguous_geography" in story.risk_flags
                 or story.event_until and story.event_until <= now
                 or not story.event_at and max(dated) < now - timedelta(days=3)):
@@ -230,16 +254,24 @@ def select_candidates(
             continue
         if rank_story(session, story, now)[0] < minimum_score:
             continue
-        if story.audience_scope == "national":
+        if max(dated) > now + timedelta(minutes=5):
+            continue
+        if story.audience_scope == "international":
+            international.append(story)
+        elif story.audience_scope == "national":
             national.append(story)
         else:
             links = session.scalars(select(StoryPlace).where(
                 StoryPlace.story_id == story.id, StoryPlace.role.in_(["affected", "occurred"]),
             ))
             region_ids = {region_of(session, session.get(Place, link.place_id)).id for link in links}
+            if not region_ids:
+                general.append(story)
             for region_id in region_ids:
                 regional.setdefault(region_id, []).append(story)
     chosen = sorted(national, key=lambda story: (-story.score, story.id))[:max(0, national_max)]
+    chosen += sorted(international, key=lambda story: (-story.score, story.id))[:max(0, international_max)]
+    chosen += sorted(general, key=lambda story: (-story.score, story.id))[:max(0, general_max)]
     selected_ids = {story.id for story in chosen}
     for region_id in sorted(regional):
         for story in sorted(regional[region_id], key=lambda row: (-row.score, row.id))[:

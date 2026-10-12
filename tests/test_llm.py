@@ -25,8 +25,8 @@ def test_fake_draft_is_structured_and_never_grants_publication(session):
 def test_live_adapter_requires_explicit_provider_configuration():
     assert isinstance(configured_adapter(Settings(_env_file=None)), FakeAdapter)
     try:
-        configured_adapter(Settings(_env_file=None, llm_provider="openai_compatible"))
+        configured_adapter(Settings(_env_file=None, llm_provider="openai"))
     except RuntimeError as exc:
-        assert "credentials" in str(exc)
+        assert "NEWS_LLM_API_KEY" in str(exc)
     else:
         raise AssertionError("Missing live credentials must not succeed")

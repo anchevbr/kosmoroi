@@ -29,6 +29,8 @@ class ValidationReport(BaseModel):
     errors: list[str]
     warnings: list[str]
     semantic_checked: bool = False
+    semantic_passed: bool = False
+    semantic_verification: dict | None = None
 
 
 def _check_text(
@@ -49,7 +51,7 @@ def _check_text(
     if HTML.search(text):
         errors.append(f"{label}: HTML is not permitted")
     if headline and set(normalize_name(text).split()) & SENSATIONAL:
-        errors.append(f"{label}: sensational wording requires editorial review")
+        errors.append(f"{label}: unsupported sensational wording")
     for quotation in QUOTES.findall(text):
         if not any(quotation in claim.excerpt and claim.speaker for claim in linked):
             errors.append(f"{label}: unattributed or invented quotation")

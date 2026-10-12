@@ -31,6 +31,7 @@ class PlaceHint(BaseModel):
     role: str
     kind: str | None = None
     context: str | None = None
+    evidence_excerpt: str | None = None
 
     @model_validator(mode="after")
     def validate_role(self) -> "PlaceHint":
@@ -63,7 +64,7 @@ class SourceInput(BaseModel):
                 setattr(self, name, utc_date(value))
         if self.event_until and self.event_at and self.event_until < self.event_at:
             raise ValueError("End of event precedes its start")
-        if self.audience_scope not in {"unknown", "local", "regional", "national", "mixed"}:
+        if self.audience_scope not in {"unknown", "local", "regional", "national", "mixed", "international"}:
             raise ValueError("Invalid audience scope")
         content = self.text or self.title
         if any(claim.excerpt not in content for claim in self.claims):
@@ -111,6 +112,8 @@ def _hash_input(data: SourceInput) -> str:
         "event_type": data.event_type, "topic": data.topic,
         "audience_scope": data.audience_scope,
         "risk_flags": sorted(data.risk_flags),
+        "published_at": data.published_at.isoformat() if data.published_at else None,
+        "updated_at": data.updated_at.isoformat() if data.updated_at else None,
     }
     normalized = unicodedata.normalize("NFC", json.dumps(payload, sort_keys=True, ensure_ascii=False))
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
@@ -151,16 +154,12 @@ def ingest_item(session: Session, source: Source, data: SourceInput) -> IngestRe
         raise PermissionError("Evidence processing is not permitted for this source")
     content_hash = _hash_input(data)
     item = _insert_item(session, source, data, url)
-    previous = session.scalar(select(SourceRevision).where(
-        SourceRevision.source_item_id == item.id,
-        SourceRevision.content_hash == content_hash,
-    ))
-    if previous:
-        item.fetched_at = utc_now()
-        return IngestResult(item.id, previous.id, "unchanged")
     latest = session.scalar(select(SourceRevision).where(
         SourceRevision.source_item_id == item.id,
     ).order_by(SourceRevision.number.desc()).limit(1))
+    if latest and latest.content_hash == content_hash:
+        item.fetched_at = utc_now()
+        return IngestResult(item.id, latest.id, "unchanged")
     number = latest.number + 1 if latest else 1
     revision = SourceRevision(
         source_item_id=item.id, number=number, content_hash=content_hash,
@@ -168,6 +167,7 @@ def ingest_item(session: Session, source: Source, data: SourceInput) -> IngestRe
         evidence_claims=[claim.model_dump() for claim in data.claims],
         place_hints=[hint.model_dump() for hint in data.place_hints],
         risk_flags=data.risk_flags,
+        analysis_state="completed" if data.claims else "pending",
     )
     session.add(revision)
     item.current_revision = number
@@ -188,6 +188,10 @@ def ingest_item(session: Session, source: Source, data: SourceInput) -> IngestRe
         article = session.scalar(select(Article).where(Article.story_id == item.story_id))
         if article and article.status != "published":
             article.status = "deferred"
+        if data.claims:
+            from greek_news.stories import refresh_story
+            from greek_news.config import get_settings
+            refresh_story(session, story, get_settings().geo_register_id)
     return IngestResult(item.id, revision.id, "revised" if latest else "new")
 
 

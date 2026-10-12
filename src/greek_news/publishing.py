@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Protocol
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.orm import Session
@@ -14,7 +14,7 @@ from greek_news.config import Settings
 from greek_news.db import utc_now
 from greek_news.evidence import EvidencePacket, freeze_evidence
 from greek_news.models import (
-    Article, ArticleVersion, AuditEntry, OperationalControl, PublicationPolicy,
+    Article, ArticleFacet, ArticleVersion, AuditEntry, OperationalControl, PublicationPolicy,
     PublicationRecord, Source, Story,
 )
 from greek_news.validation import HIGH_RISK, ValidationReport, validate_draft
@@ -72,6 +72,8 @@ def auto_decision(
         reasons.append("The fixture adapter cannot draft live reporting")
     if not report.valid:
         reasons.append("Article validation failed")
+    if not packet.fixture_only and not (report.semantic_checked and report.semantic_passed):
+        reasons.append("Live article requires successful automated semantic verification")
     if packet.conflict or "ambiguous_geography" in packet.risk_flags:
         reasons.append("Conflicting evidence or unresolved geography")
     if set(packet.risk_flags) & HIGH_RISK and packet.independent_origins < 2:
@@ -125,6 +127,11 @@ def resume_pending(session: Session, settings: Settings, now: datetime) -> int:
                 else:
                     draft = ArticleDraft.model_validate(version.content)
                     report = validate_draft(draft, packet, now)
+                    saved = version.validation
+                    if saved.get("semantic_checked") and saved.get("semantic_passed"):
+                        report.semantic_checked = True
+                        report.semantic_passed = True
+                        report.semantic_verification = saved.get("semantic_verification")
                     version.validation = report.model_dump()
                     if not report.valid:
                         reason = "; ".join(report.errors)
@@ -262,6 +269,27 @@ class LocalPublisher:
             article.modified_at = now
         article.published_version = record.version
         article.status = "published"
+        draft = ArticleDraft.model_validate(version.content)
+        packet = EvidencePacket.model_validate(version.evidence_packet)
+        session.execute(delete(ArticleFacet).where(ArticleFacet.article_id == article.id))
+        values = {("edition", draft.edition), ("category", draft.category),
+                  ("language", draft.language), ("scope", draft.audience_scope),
+                  ("format", draft.article_format)}
+        if draft.subcategory:
+            values.add(("subcategory", draft.subcategory))
+        values.update(("topic", tag) for tag in draft.topic_tags)
+        values.update(("entity", key) for key in draft.entity_ids)
+        values.update(("country", code) for code in draft.country_codes)
+        relevant = [place for place in packet.places if place.role == "affected"] or [place for place in packet.places if place.role == "occurred"]
+        for place in relevant:
+            values.update(("place", key) for key in (place.ancestor_ids or (place.id, place.region_id)))
+        if packet.fixture_only:
+            values.add(("fixture", "true"))
+        from greek_news.models import Place, GeoRegister
+        if any(session.get(GeoRegister, session.get(Place, place.id).register_id).is_fixture for place in packet.places):
+            values.add(("fixture", "true"))
+        session.add_all(ArticleFacet(article_id=article.id, kind=kind, value=value)
+                        for kind, value in sorted(values))
         version.status = "published"
         record.state = "published"
         record.published_at = now
@@ -303,6 +331,13 @@ def publish_pending(
             detail={"version": record.version, "reason": record.error},
         ))
         return record
+    if version.approved_by == "automated_validation":
+        report = ValidationReport.model_validate(version.validation)
+        decision = auto_decision(session, current, report, settings, now)
+        if not decision.allowed:
+            record.state = "blocked"
+            record.error = "; ".join(decision.reasons)
+            return record
     (publisher or LocalPublisher()).publish(session, record, now)
     return record
 

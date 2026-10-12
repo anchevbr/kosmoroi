@@ -13,8 +13,9 @@ celery_app.conf.update(
     broker_connection_retry_on_startup=True,
     worker_prefetch_multiplier=1,
     task_acks_late=True,
+    task_reject_on_worker_lost=True,
     beat_schedule={"scan-durable-jobs": {
-        "task": "greek_news.tick", "schedule": 60.0,
+        "task": "greek_news.tick", "schedule": 60.0, "options": {"expires": 55},
     }},
 )
 

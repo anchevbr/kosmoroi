@@ -1,266 +1,285 @@
-"""PostgreSQL-owned scheduling, recoverable leases and safe worker dispatch."""
+"""Database-owned scheduling, staged HTML/AI jobs, recoverable leases and bounded retries."""
 
 import logging
-from datetime import datetime, timedelta
-from typing import Callable
-
-from sqlalchemy import case, select
+import os
+import socket
+from contextlib import nullcontext
+from datetime import timedelta
+from sqlalchemy import case, or_, select, text
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.orm import Session
-
 from greek_news.budget import BudgetExceeded, mark_uncertain
-from greek_news.config import Settings
-from greek_news.db import new_id, utc_now
+from greek_news.db import new_id, use_clock, utc_now
 from greek_news.discovery import eligibility_reason, import_catalog, verify_candidate
+from greek_news.enrichment import enrich_revision
 from greek_news.evidence import freeze_evidence
 from greek_news.generation import generate_article
 from greek_news.ingestion import source_permits_storage
-from greek_news.models import (
-    Article, ArticleVersion, AuditEntry, Job, LLMCall, PublicationRecord,
-    Source, SourceItem, SourceRevision,
-)
-from greek_news.polling import poll_source
+from greek_news.llm import ModelConfigurationError, ModelFailure
+from greek_news.models import (Article, ArticleVersion, CrawlURL, Job, LLMCall,
+                               PublicationRecord, Source, SourceItem, SourceRevision, WorkerHeartbeat)
+from greek_news.polling import fetch_frontier, poll_source
 from greek_news.publishing import control, publish_pending, resume_pending
-from greek_news.stories import group_item, select_candidates
-
+from greek_news.searching import search_news, search_queries
+from greek_news.stories import select_candidates
 
 logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 3
+KINDS = {"poll", "fetch", "enrich", "generate", "publish", "discover", "catalog", "search", "maintenance"}
 
 
-def enqueue(
-    session: Session, kind: str, payload: dict, key: str, *, next_run_at: datetime | None = None,
-) -> Job:
-    if kind not in {"poll", "generate", "publish", "discover", "catalog"}:
+def enqueue(session, kind, payload, key, *, next_run_at=None):
+    if kind not in KINDS:
         raise ValueError("Unknown durable job type")
-    dialect = session.get_bind().dialect.name
-    statement = postgres_insert(Job) if dialect == "postgresql" else sqlite_insert(Job)
-    session.execute(statement.values(
-        id=new_id(), idempotency_key=key, kind=kind, payload=payload, state="pending",
-        attempts=0, next_run_at=next_run_at or utc_now(), created_at=utc_now(),
-    ).on_conflict_do_nothing(index_elements=[Job.idempotency_key]))
+    statement = postgres_insert(Job) if session.get_bind().dialect.name == "postgresql" else sqlite_insert(Job)
+    session.execute(statement.values(id=new_id(), idempotency_key=key, kind=kind, payload=payload,
+                    state="pending", attempts=0, next_run_at=next_run_at or utc_now(), created_at=utc_now())
+                    .on_conflict_do_nothing(index_elements=[Job.idempotency_key]))
     return session.scalar(select(Job).where(Job.idempotency_key == key))
 
 
-def schedule_due(session: Session, settings: Settings, now: datetime | None = None) -> int:
+def schedule_due(session, settings, now=None):
     now = now or utc_now()
     added = 0
+    def add(kind, payload, key, when=now):
+        nonlocal added
+        if not session.scalar(select(Job.id).where(Job.idempotency_key == key)):
+            enqueue(session, kind, payload, key, next_run_at=when)
+            added += 1
     if settings.source_catalog_path:
         bucket = int(now.timestamp() // (settings.source_discovery_interval_minutes * 60))
-        key = f"catalog:{bucket}"
-        if not session.scalar(select(Job).where(Job.idempotency_key == key)):
-            enqueue(session, "catalog", {"path": settings.source_catalog_path}, key,
-                    next_run_at=now)
-            added += 1
+        add("catalog", {"path": settings.source_catalog_path}, f"catalog:{bucket}")
+    add("maintenance", {}, f"maintenance:{now.date()}")
+    if settings.web_search_enabled and settings.llm_provider == "openai":
+        queries = search_queries()
+        bucket = int(now.timestamp() // (settings.web_search_interval_minutes * 60))
+        for offset in range(min(settings.web_search_queries_per_tick, len(queries))):
+            index = (bucket * settings.web_search_queries_per_tick + offset) % len(queries)
+            add("search", {"query": queries[index]}, f"search:{bucket}:{index}")
     resume_pending(session, settings, now)
     discovered = 0
     for source in session.scalars(select(Source).order_by(Source.priority.desc(), Source.id)):
+        if source.source_type == "fixture":
+            continue
         if source.enabled:
             if not source_permits_storage(source, now):
                 source.enabled = False
-                source.verification_note = "Source permissions are missing or expired"
-                session.add(AuditEntry(actor="pipeline", action="source_auto_disabled",
-                                       subject="source", subject_id=source.id,
-                                       detail={"reason": source.verification_note}))
+                source.verification_note = "Source policy unavailable or expired"
                 continue
-            if (source.source_type not in {"rss", "atom"}
-                    or not source.endpoint_verified_at or source.next_poll_at and source.next_poll_at > now):
+            if source.source_type not in {"html", "html_index"} or not source.endpoint_verified_at or source.next_poll_at and source.next_poll_at > now:
                 continue
-            pending = session.scalar(select(Job).where(
-                Job.kind == "poll", Job.state.in_(["pending", "running"]),
-                Job.idempotency_key.like(f"poll:{source.id}:%"),
-            ).limit(1))
+            pending = session.scalar(select(Job.id).where(Job.kind == "poll", Job.state.in_(["pending", "running"]),
+                                      Job.idempotency_key.like(f"poll:{source.id}:%")).limit(1))
             if not pending:
-                enqueue(session, "poll", {"source_id": source.id},
-                        f"poll:{source.id}:{int(now.timestamp() // 60)}", next_run_at=now)
-                added += 1
-        elif (discovered < settings.source_discovery_max_per_tick
-              and eligibility_reason(source, now) is None
+                add("poll", {"source_id": source.id}, f"poll:{source.id}:{int(now.timestamp() // 60)}")
+        elif (discovered < settings.source_discovery_max_per_tick and eligibility_reason(source, now) is None
               and (not source.next_poll_at or source.next_poll_at <= now)
-              and (not source.last_discovery_check or source.last_discovery_check <= now - timedelta(
-                  minutes=settings.source_discovery_interval_minutes,
-              ))):
+              and (not source.last_discovery_check or source.last_discovery_check <= now - timedelta(minutes=settings.source_discovery_interval_minutes))):
             key = f"discover:{source.id}:{int(now.timestamp() // 60 // settings.source_discovery_interval_minutes)}"
-            existing = session.scalar(select(Job).where(Job.idempotency_key == key))
-            if not existing:
-                enqueue(session, "discover", {"source_id": source.id}, key, next_run_at=now)
+            if not session.scalar(select(Job.id).where(Job.idempotency_key == key)):
+                add("discover", {"source_id": source.id}, key)
                 discovered += 1
-                added += 1
-    for record in session.scalars(select(PublicationRecord).where(PublicationRecord.state == "pending")):
-        enqueue(session, "publish", {"record_id": record.id},
-            f"publish:{record.id}", next_run_at=now)
+    frontier = session.scalars(select(CrawlURL).join(Source).where(
+        Source.enabled.is_(True), CrawlURL.state.in_(["pending", "watched"]),
+        CrawlURL.next_fetch_at <= now,
+        or_(Source.next_request_at.is_(None), Source.next_request_at <= now),
+        or_(CrawlURL.kind == "index", CrawlURL.discovered_at >= now - timedelta(days=settings.article_watch_days)),
+    ).order_by(case((CrawlURL.state == "pending", 0), else_=1), Source.priority.desc(), CrawlURL.discovered_at)
+        .limit(settings.crawl_articles_per_tick)).all()
+    for row in frontier:
+        if not session.scalar(select(Job.id).where(Job.kind == "fetch", Job.state.in_(["pending", "running"]),
+                              Job.idempotency_key.like(f"fetch:{row.id}:%")).limit(1)):
+            add("fetch", {"crawl_id": row.id}, f"fetch:{row.id}:{int(row.next_fetch_at.timestamp())}")
     if not control(session).generation_paused:
-        for story in select_candidates(
-            session, now=now, national_max=settings.national_selection_max,
-            regional_max=settings.regional_selection_max,
-            minimum_score=settings.selection_min_score,
-        ):
+        for revision in session.scalars(select(SourceRevision).join(SourceItem).join(Source).where(
+            Source.enabled.is_(True), Source.can_process_ai.is_(True), SourceRevision.analysis_state == "pending",
+            SourceRevision.number == SourceItem.current_revision, SourceRevision.permitted_text.is_not(None),
+        ).order_by(Source.priority.desc(), SourceRevision.revised_at).limit(settings.crawl_articles_per_tick)):
+            add("enrich", {"revision_id": revision.id}, f"enrich:{revision.id}")
+        for story in select_candidates(session, now=now, national_max=settings.national_selection_max,
+                       regional_max=settings.regional_selection_max, international_max=settings.international_selection_max,
+                       general_max=settings.general_selection_max, minimum_score=settings.selection_min_score):
             try:
                 fingerprint = freeze_evidence(session, story, now=now).fingerprint()
-            except (PermissionError, ValueError):
+            except (ValueError, PermissionError):
                 continue
             key = f"generate:{story.id}:{fingerprint}"
-            existing = session.scalar(select(Job).where(Job.idempotency_key == key))
             article = session.scalar(select(Article).where(Article.story_id == story.id))
-            latest = session.scalar(select(ArticleVersion).where(
-                ArticleVersion.article_id == article.id,
-                ArticleVersion.number == article.current_version,
-            )) if article else None
+            latest = session.scalar(select(ArticleVersion).where(ArticleVersion.article_id == article.id,
+                                    ArticleVersion.number == article.current_version)) if article else None
             if latest and not latest.evidence_packet:
                 key = f"regenerate:{story.id}:{fingerprint}:{article.current_version}"
-                existing = session.scalar(select(Job).where(Job.idempotency_key == key))
-            if not existing:
-                enqueue(session, "generate", {"story_id": story.id}, key, next_run_at=now)
-                added += 1
+            add("generate", {"story_id": story.id}, key)
+    for record in session.scalars(select(PublicationRecord).where(PublicationRecord.state == "pending")):
+        add("publish", {"record_id": record.id}, f"publish:{record.id}")
     return added
 
 
-def claim_due(session: Session, *, now: datetime | None = None, limit: int = 10) -> list[str]:
+def claim_due(session, *, now=None, limit=10, lease_seconds=1800):
     now = now or utc_now()
-    expired = session.scalars(select(Job).where(
-        Job.state == "running", Job.lease_until < now,
-    ).with_for_update(skip_locked=True)).all()
-    for job in expired:
-        usage = session.scalar(select(LLMCall).where(LLMCall.job_id == job.id))
-        if job.kind == "generate" and usage:
-            mark_uncertain(session, job.id)
-            job.state = "failed"
-            job.last_error = "A previous model call has an uncertain outcome; manual reconciliation required"
-        elif job.attempts >= MAX_ATTEMPTS:
-            job.state = "failed"
-            job.last_error = "Worker lease expired too many times"
-        else:
-            job.state = "pending"
-            job.next_run_at = now
-    due = session.scalars(select(Job).where(
-        Job.state == "pending", Job.next_run_at <= now,
-    ).order_by(case((Job.kind == "publish", 0), (Job.kind == "generate", 1),
-                    (Job.kind == "poll", 2), (Job.kind == "discover", 3), else_=4),
-               Job.created_at).limit(limit)
-        .with_for_update(skip_locked=True)).all()
+    for job in session.scalars(select(Job).where(Job.state == "running", Job.lease_until < now).with_for_update(skip_locked=True)):
+        mark_uncertain(session, job.id)
+        job.state = "failed" if job.attempts >= MAX_ATTEMPTS else "pending"
+        job.last_error = "Expired worker lease; model usage retained conservatively, next attempt is bounded"
+        job.next_run_at = now
+    due = session.scalars(select(Job).where(Job.state == "pending", Job.next_run_at <= now)
+        .order_by(case((Job.kind == "publish", 0), (Job.kind == "generate", 1), (Job.kind == "enrich", 2),
+                       (Job.kind == "fetch", 3), (Job.kind == "poll", 4), (Job.kind == "discover", 5),
+                       (Job.kind == "catalog", 6), else_=7), Job.created_at)
+        .limit(limit).with_for_update(skip_locked=True)).all()
     for job in due:
-        job.state = "running"
-        job.attempts += 1
-        job.lease_until = now + timedelta(minutes=5)
+        job.state, job.attempts = "running", job.attempts + 1
+        job.lease_until = now + timedelta(seconds=lease_seconds)
     session.flush()
     return [job.id for job in due]
 
 
-def _complete(session: Session, job_id: str, result: dict) -> None:
+def _complete(session, job_id, result):
     job = session.get(Job, job_id, with_for_update=True)
-    job.state = "completed"
-    job.completed_at = utc_now()
-    job.lease_until = None
+    job.state, job.completed_at, job.lease_until = "completed", utc_now(), None
     job.payload = {**job.payload, "result": result}
 
 
-def _failed(session: Session, job_id: str, exc: Exception, now: datetime) -> None:
+def _failed(session, job_id, exc, now):
     job = session.get(Job, job_id, with_for_update=True)
-    usage = session.scalar(select(LLMCall).where(LLMCall.job_id == job_id))
     job.last_error = f"{type(exc).__name__}: {str(exc)[:900]}"
     job.lease_until = None
-    if (job.attempts >= MAX_ATTEMPTS or job.kind == "generate" and usage
-            or job.kind == "publish" and isinstance(exc, PermissionError)):
+    mark_uncertain(session, job_id)
+    if isinstance(exc, ModelConfigurationError):
+        job.state, job.attempts = "pending", max(0, job.attempts - 1)
+        job.next_run_at = now + timedelta(minutes=15)
+        return
+    if isinstance(exc, ValueError):
+        for call in session.scalars(select(LLMCall).where(LLMCall.job_id == job_id,
+                                   LLMCall.attempt == job.attempts, LLMCall.status == "completed")):
+            call.status = "rejected"
+    if job.attempts >= MAX_ATTEMPTS or isinstance(exc, ModelFailure) and not exc.retryable:
         job.state = "failed"
-        if usage:
-            mark_uncertain(session, job_id)
+    elif job.kind == "publish" and isinstance(exc, PermissionError):
+        job.state, job.attempts = "pending", max(0, job.attempts - 1)
+        job.next_run_at = now + timedelta(minutes=1)
     else:
         job.state = "pending"
-        job.next_run_at = now + timedelta(seconds=min(3600, 60 * (2 ** job.attempts)))
+        job.next_run_at = now + timedelta(seconds=min(3600, 60 * 2 ** job.attempts))
 
 
-def run_once(
-    session_factory: Callable[[], Session], settings: Settings, *,
-    now: datetime | None = None, schedule: bool = True,
-) -> dict[str, int]:
-    now = now or utc_now()
+def maintenance(session, settings):
+    from sqlalchemy import update
+    cutoff = utc_now() - timedelta(days=settings.raw_text_retention_days)
+    # Used evidence excerpts are durable; full original prose expires independently.
+    result = session.execute(update(SourceRevision).where(SourceRevision.revised_at < cutoff,
+                             SourceRevision.permitted_text.is_not(None))
+                             .values(permitted_text=None, analysis_state=case(
+                                 (SourceRevision.analysis_state == "pending", "failed"),
+                                 else_=SourceRevision.analysis_state)))
+    return {"expired_raw_texts": result.rowcount}
+
+
+def _heartbeat(session, state, result=None):
+    key = f"{socket.gethostname()}:{os.getpid()}"
+    row = session.get(WorkerHeartbeat, key)
+    if row is None:
+        row = WorkerHeartbeat(id=key)
+        session.add(row)
+    row.updated_at, row.detail = utc_now(), {"state": state, "result": result or {}}
+
+
+def run_once(session_factory, settings, *, now=None, schedule=True):
+    # Freeze only explicit offline/test clocks. Production uses a running UTC clock.
+    with use_clock(now) if now is not None else nullcontext():
+        lock = None
+        with session_factory() as session:
+            engine = session.get_bind()
+        if engine.dialect.name == "postgresql":
+            lock = engine.connect()
+            if not lock.execute(text("SELECT pg_try_advisory_lock(hashtext('kosmoroi-worker-tick'))")).scalar_one():
+                lock.close()
+                return {"scheduled": 0, "succeeded": 0, "failed": 0}
+        try:
+            return _run(session_factory, settings, schedule=schedule)
+        finally:
+            if lock:
+                lock.execute(text("SELECT pg_advisory_unlock(hashtext('kosmoroi-worker-tick'))"))
+                lock.close()
+
+
+def _run(session_factory, settings, *, schedule):
     added = succeeded = failed = 0
-    for _ in range(3 if schedule else 1):
+    for _ in range(settings.tick_rounds if schedule else 1):
+        now = utc_now()
         with session_factory() as session, session.begin():
+            _heartbeat(session, "working")
             added += schedule_due(session, settings, now) if schedule else 0
-            job_ids = claim_due(session, now=now)
-        if not job_ids:
+            ids = claim_due(session, now=now, limit=settings.tick_jobs_per_round, lease_seconds=settings.job_lease_seconds)
+        if not ids:
             break
-        for job_id in job_ids:
+        for job_id in ids:
             with session_factory() as session:
                 job = session.get(Job, job_id)
                 kind, payload = job.kind, job.payload
             try:
-                if kind == "generate":
+                if kind in {"generate", "enrich", "search"}:
                     with session_factory() as session:
-                        if control(session).generation_paused:
-                            raise BudgetExceeded("Generation is paused by an operator")
-                    generate_article(session_factory, payload["story_id"], job_id, settings, now=now)
-                elif kind == "publish":
+                        paused = control(session).generation_paused
+                    if paused:
+                        raise BudgetExceeded("AI processing is paused")
+                    if kind == "generate":
+                        generate_article(session_factory, payload["story_id"], job_id, settings, now=now)
+                    else:
+                        result = enrich_revision(session_factory, payload["revision_id"], job_id, settings) if kind == "enrich" else search_news(session_factory, job_id, payload["query"], settings)
+                        with session_factory() as session, session.begin():
+                            _complete(session, job_id, result)
+                else:
                     with session_factory() as session, session.begin():
-                        record = publish_pending(session, payload["record_id"], settings, now=now)
-                        _complete(session, job_id, {"publication_state": record.state})
-                elif kind == "discover":
-                    with session_factory() as session, session.begin():
-                        source = session.get(Source, payload["source_id"], with_for_update=True)
-                        result = verify_candidate(session, source, now=now)
-                        _complete(session, job_id, {"discovery_state": result.state,
-                                                    "reason": result.reason})
-                elif kind == "catalog":
-                    with session_factory() as session, session.begin():
-                        added_sources = import_catalog(session, payload["path"])
-                        _complete(session, job_id, {"new_candidates": added_sources})
-                elif kind == "poll":
-                    with session_factory() as session, session.begin():
-                        source = session.get(Source, payload["source_id"])
-                        result = poll_source(session, source)
-                        if result.state == "failed":
-                            failed_job = session.get(Job, job_id, with_for_update=True)
-                            failed_job.state = "failed"
-                            failed_job.last_error = result.reason
-                            failed_job.lease_until = None
-                            failed += 1
-                            continue
-                        if result.state == "deferred":
-                            waiting = session.get(Job, job_id, with_for_update=True)
-                            waiting.state = "pending"
-                            waiting.lease_until = None
-                            waiting.next_run_at = source.next_poll_at or now + timedelta(minutes=1)
-                            continue
-                        if result.state == "ok":
-                            items = session.scalars(select(SourceItem).where(
-                                SourceItem.source_id == source.id, SourceItem.story_id.is_(None),
-                            ))
-                            for item in items:
-                                revision = session.scalar(select(SourceRevision).where(
-                                    SourceRevision.source_item_id == item.id,
-                                    SourceRevision.number == item.current_revision,
-                                ))
-                                if revision.evidence_claims:
-                                    group_item(session, item, settings.geo_register_id)
-                        _complete(session, job_id, {"poll_state": result.state, "new": result.new})
+                        if kind == "publish":
+                            result = {"publication_state": publish_pending(session, payload["record_id"], settings, now=now).state}
+                        elif kind == "catalog":
+                            result = {"new_candidates": import_catalog(session, payload["path"], settings)}
+                        elif kind == "maintenance":
+                            result = maintenance(session, settings)
+                        elif kind == "discover":
+                            source = session.get(Source, payload["source_id"], with_for_update=True)
+                            value = verify_candidate(session, source, now=now)
+                            result = {"discovery_state": value.state, "reason": value.reason}
+                        elif kind in {"poll", "fetch"}:
+                            source = session.get(Source, payload["source_id"], with_for_update=True) if kind == "poll" else None
+                            row = session.get(CrawlURL, payload["crawl_id"], with_for_update=True) if kind == "fetch" else None
+                            value = poll_source(session, source, settings=settings) if source else fetch_frontier(session, row, settings)
+                            if value.state == "deferred":
+                                job = session.get(Job, job_id)
+                                job.state, job.lease_until, job.attempts = "pending", None, max(0, job.attempts - 1)
+                                job.next_run_at = (source.next_request_at or source.next_poll_at) if source else row.next_fetch_at
+                                job.next_run_at = max(job.next_run_at or now, now + timedelta(seconds=1))
+                                continue
+                            if value.state == "failed":
+                                job = session.get(Job, job_id)
+                                job.state, job.lease_until, job.last_error = "failed", None, value.reason
+                                failed += 1
+                                continue
+                            result = {"state": value.state, "new": value.new, "revised": value.revised}
+                        _complete(session, job_id, result)
                 succeeded += 1
             except BudgetExceeded as exc:
                 with session_factory() as session, session.begin():
-                    job = session.get(Job, job_id, with_for_update=True)
-                    job.state = "pending"
+                    job = session.get(Job, job_id)
+                    job.state, job.lease_until = "pending", None
+                    job.attempts = max(0, job.attempts - 1)
                     job.last_error = str(exc)
-                    job.lease_until = None
-                    job.next_run_at = (now + timedelta(days=1)).replace(
-                        hour=0, minute=5, second=0, microsecond=0,
-                    )
+                    job.next_run_at = (now + timedelta(minutes=1)) if "paused" in str(exc) else (now + timedelta(days=1)).replace(hour=0, minute=5, second=0, microsecond=0)
             except Exception as exc:
-                logger.error("job_failed kind=%s id=%s error=%s", kind, job_id, exc)
+                logger.error("job_failed kind=%s id=%s error=%s", kind, job_id, type(exc).__name__)
                 with session_factory() as session, session.begin():
                     _failed(session, job_id, exc, now)
                 failed += 1
-    return {"scheduled": added, "succeeded": succeeded, "failed": failed}
+    result = {"scheduled": added, "succeeded": succeeded, "failed": failed}
+    with session_factory() as session, session.begin():
+        _heartbeat(session, "idle", result)
+    return result
 
 
-def retry_failed(session: Session, job_id: str) -> Job:
+def retry_failed(session, job_id):
     job = session.get(Job, job_id, with_for_update=True)
     if not job or job.state != "failed" or job.attempts >= MAX_ATTEMPTS:
-        raise ValueError("Job is not safely retryable")
-    usage = session.scalar(select(LLMCall).where(LLMCall.job_id == job.id))
-    if usage:
-        raise ValueError("An uncertain model attempt must be reconciled, not retried")
-    job.state = "pending"
-    job.next_run_at = utc_now()
-    job.last_error = None
+        raise ValueError("Job has exhausted its automatic attempts")
+    job.state, job.next_run_at, job.last_error = "pending", utc_now(), None
     return job

@@ -19,36 +19,13 @@ CHECKED = datetime(2026, 10, 9, tzinfo=timezone.utc)
 
 
 def seed_candidates(session: Session) -> int:
-    candidates = [
-        dict(
-            name="Civil Protection press RSS - rights review required",
-            canonical_domain="civilprotection.gov.gr",
-            feed_url="https://civilprotection.gov.gr/deltia-tupou.rss",
-            source_type="rss", organization="Greek Civil Protection Ministry",
-            trust_category="official_statement", poll_minutes=30,
-            permission_basis="RSS advertised for feed readers; site terms exclude commercial reuse under CC BY-NC-SA 4.0. Permissions for this product not established.",
-            terms_url="https://civilprotection.gov.gr/oroi-xrisis",
-            permission_reviewed_at=CHECKED, endpoint_verified_at=CHECKED,
-            verification_note="RSS responded 2026-10-09; duplicate entries and malformed GUIDs observed; not cleared for commercial AI processing.",
-        ),
-        dict(
-            name="ERTNews regional page - inactive candidate",
-            canonical_domain="www.ertnews.gr",
-            feed_url="https://www.ertnews.gr/news/perifereiakoi-stathmoi/",
-            source_type="html_index", extraction_strategy="requires_site_plugin",
-            organization="ERT", trust_category="publisher", poll_minutes=30,
-            verification_note="Regional reporting page responded 2026-10-09; no feed endpoint or commercial AI rights verified.",
-            endpoint_verified_at=CHECKED,
-        ),
-        dict(
-            name="Civil Protection maps RSS - inactive candidate",
-            canonical_domain="civilprotection.gov.gr",
-            feed_url="https://civilprotection.gov.gr/cp_hartes.rss",
-            source_type="rss", organization="Greek Civil Protection Ministry",
-            trust_category="official_statement", poll_minutes=60,
-            verification_note="Advertised in RSS directory; endpoint itself and rights not checked.",
-        ),
-    ]
+    candidates = [dict(name=name, canonical_domain=host, feed_url=url,
+                       source_type="html", extraction_strategy="article_html",
+                       organization=name, verification_note="HTML example; policy not configured")
+                  for name, host, url in [
+                      ("ERT Regional HTML example", "www.ertnews.gr", "https://www.ertnews.gr/news/perifereiakoi-stathmoi/"),
+                      ("Civil Protection HTML example", "civilprotection.gov.gr", "https://civilprotection.gov.gr/"),
+                      ("UN News HTML example", "news.un.org", "https://news.un.org/en/")]]
     count = 0
     for values in candidates:
         if session.scalar(select(Source).where(Source.feed_url == values["feed_url"])):

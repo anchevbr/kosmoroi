@@ -7,16 +7,18 @@ from pydantic import BaseModel, Field, model_validator
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from greek_news.models import GeoRegister, Place, PlaceRelation
+from greek_news.models import GeoRegister, Place, PlaceAlias, PlaceRelation
 
 
-KINDS = {"region", "regional_unit", "municipality", "settlement", "town", "island"}
+KINDS = {"country", "region", "regional_unit", "municipality", "settlement", "town", "city", "island"}
 PARENTS = {
-    "region": {None},
+    "country": {None},
+    "region": {None, "country"},
     "regional_unit": {"region"},
     "municipality": {"regional_unit"},
     "town": {"municipality"},
     "settlement": {"municipality"},
+    "city": {"country", "region"},
     "island": {"region", "regional_unit"},
 }
 
@@ -103,6 +105,12 @@ def import_register(session: Session, data: RegisterInput) -> int:
         ))
     session.flush()
     for item in data.places:
+        for alias in sorted({normalize_name(item.name_el), *(normalize_name(x) for x in item.aliases)}):
+            if alias and len(alias) <= 200:
+                session.add(PlaceAlias(place_id=place_id(data.id, item.official_id),
+                                       normalized_name=alias))
+    session.flush()
+    for item in data.places:
         for island_id in item.island_official_ids:
             session.add(PlaceRelation(
                 place_id=place_id(data.id, item.official_id),
@@ -131,15 +139,22 @@ def resolve_place(
     context: str | None = None, register_id: str | None = None,
 ) -> Place:
     normalized = normalize_name(name)
-    rows = session.scalars(select(Place).where(Place.register_id == register_id) if register_id
-                           else select(Place)).all()
+    indexed = select(Place).join(PlaceAlias).where(PlaceAlias.normalized_name == normalized)
+    if register_id:
+        indexed = indexed.where(Place.register_id == register_id)
+    rows = session.scalars(indexed).unique().all()
+    if not rows:
+        # Compatibility for an imported pre-alias register; bootstrap backfills its aliases.
+        rows = session.scalars(select(Place).where(Place.normalized_name == normalized)).all()
     candidates = [place for place in rows if (kind is None or place.kind == kind)
                   and (place.normalized_name == normalized
                        or normalized in {normalize_name(alias) for alias in place.aliases})]
     if context:
         region_context = normalize_name(context)
         candidates = [place for place in candidates if any(
-            ancestor.kind == "region" and ancestor.normalized_name == region_context
+            (ancestor.normalized_name == region_context
+             or region_context in {normalize_name(x) for x in ancestor.aliases}
+             or ancestor.official_id == context)
             for ancestor in ancestors(session, place)
         )]
     if len(candidates) != 1:
@@ -148,4 +163,15 @@ def resolve_place(
 
 
 def region_of(session: Session, place: Place) -> Place:
-    return next(ancestor for ancestor in ancestors(session, place) if ancestor.kind == "region")
+    chain = ancestors(session, place)
+    return next((ancestor for ancestor in chain if ancestor.kind == "region"), chain[-1])
+
+
+def country_of(session: Session, place: Place) -> Place | None:
+    return next((row for row in ancestors(session, place) if row.kind == "country"), None)
+
+
+def descendants(session, parent_id):
+    tree = select(Place.id).where(Place.id == parent_id).cte("place_tree", recursive=True)
+    tree = tree.union_all(select(Place.id).join(tree, Place.parent_id == tree.c.id))
+    return list(session.scalars(select(tree.c.id)))

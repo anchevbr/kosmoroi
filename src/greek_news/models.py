@@ -15,8 +15,15 @@ class Source(Base):
     name: Mapped[str] = mapped_column(String(200), unique=True)
     canonical_domain: Mapped[str] = mapped_column(String(255))
     feed_url: Mapped[str] = mapped_column(String(2000), unique=True)
-    source_type: Mapped[str] = mapped_column(String(40), default="rss")
-    extraction_strategy: Mapped[str] = mapped_column(String(40), default="feed_metadata")
+    source_type: Mapped[str] = mapped_column(String(40), default="html")
+    extraction_strategy: Mapped[str] = mapped_column(String(40), default="article_html")
+    country_code: Mapped[str] = mapped_column(String(2), default="GR")
+    locality_hint: Mapped[str] = mapped_column(String(200), default="")
+    entry_urls: Mapped[list[str]] = mapped_column(JSON, default=list)
+    article_url_pattern: Mapped[str | None] = mapped_column(String(500))
+    index_url_pattern: Mapped[str | None] = mapped_column(String(500))
+    link_selector: Mapped[str | None] = mapped_column(String(500))
+    is_directory: Mapped[bool] = mapped_column(Boolean, default=False)
     language: Mapped[str] = mapped_column(String(12), default="el")
     coverage_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -49,6 +56,9 @@ class Source(Base):
     last_modified_header: Mapped[str | None] = mapped_column(String(500))
     retry_after: Mapped[datetime | None] = mapped_column(UTCDateTime())
     next_poll_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    next_request_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    robots_txt: Mapped[str | None] = mapped_column(Text)
+    robots_checked_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
 
 
 class GeoRegister(Base):
@@ -86,6 +96,44 @@ class PlaceRelation(Base):
     place_id: Mapped[str] = mapped_column(ForeignKey("places.id"))
     related_id: Mapped[str] = mapped_column(ForeignKey("places.id"))
     relation: Mapped[str] = mapped_column(String(40))
+
+
+class PlaceAlias(Base):
+    __tablename__ = "place_aliases"
+    __table_args__ = (UniqueConstraint("place_id", "normalized_name"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    place_id: Mapped[str] = mapped_column(ForeignKey("places.id"), index=True)
+    normalized_name: Mapped[str] = mapped_column(String(200), index=True)
+
+
+class CrawlURL(Base):
+    __tablename__ = "crawl_urls"
+    __table_args__ = (UniqueConstraint("source_id", "url"),
+                      Index("ix_crawl_urls_due", "state", "next_fetch_at"))
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    source_id: Mapped[str] = mapped_column(ForeignKey("sources.id"), index=True)
+    url: Mapped[str] = mapped_column(String(2000))
+    title_hint: Mapped[str] = mapped_column(Text, default="")
+    kind: Mapped[str] = mapped_column(String(20), default="article")
+    depth: Mapped[int] = mapped_column(Integer, default=0)
+    state: Mapped[str] = mapped_column(String(20), default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    discovered_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    next_fetch_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    fetched_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
+    etag: Mapped[str | None] = mapped_column(String(500))
+    last_modified: Mapped[str | None] = mapped_column(String(500))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    source_item_id: Mapped[str | None] = mapped_column(ForeignKey("source_items.id"))
+
+
+class WorkerHeartbeat(Base):
+    __tablename__ = "worker_heartbeats"
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    updated_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+    detail: Mapped[dict] = mapped_column(JSON, default=dict)
 
 
 class Story(Base):
@@ -146,7 +194,6 @@ class SourceRevision(Base):
     __tablename__ = "source_revisions"
     __table_args__ = (
         UniqueConstraint("source_item_id", "number"),
-        UniqueConstraint("source_item_id", "content_hash"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -158,6 +205,8 @@ class SourceRevision(Base):
     evidence_claims: Mapped[list[dict]] = mapped_column(JSON, default=list)
     place_hints: Mapped[list[dict]] = mapped_column(JSON, default=list)
     risk_flags: Mapped[list[str]] = mapped_column(JSON, default=list)
+    analysis: Mapped[dict] = mapped_column(JSON, default=dict)
+    analysis_state: Mapped[str] = mapped_column(String(20), default="pending", index=True)
     revised_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
 
 
@@ -199,6 +248,17 @@ class ArticleVersion(Base):
     approved_by: Mapped[str | None] = mapped_column(String(200))
     approved_at: Mapped[datetime | None] = mapped_column(UTCDateTime())
     created_at: Mapped[datetime] = mapped_column(UTCDateTime(), default=utc_now)
+
+
+class ArticleFacet(Base):
+    """Published snapshot facets for indexed, SQL-filtered frontend queries."""
+    __tablename__ = "article_facets"
+    __table_args__ = (UniqueConstraint("article_id", "kind", "value"),
+                      Index("ix_article_facets_lookup", "kind", "value", "article_id"))
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    article_id: Mapped[str] = mapped_column(ForeignKey("articles.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(30))
+    value: Mapped[str] = mapped_column(String(200))
 
 
 class PublicationPolicy(Base):
@@ -270,7 +330,12 @@ class LLMCall(Base):
     __tablename__ = "llm_calls"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), unique=True)
+    __table_args__ = (UniqueConstraint("job_id", "stage", "attempt", name="uq_llm_calls_stage_attempt"),)
+    job_id: Mapped[str] = mapped_column(ForeignKey("jobs.id"), index=True)
+    stage: Mapped[str] = mapped_column(String(30), default="draft")
+    attempt: Mapped[int] = mapped_column(Integer, default=1)
+    response: Mapped[dict | None] = mapped_column(JSON)
+    request_hash: Mapped[str | None] = mapped_column(String(64), index=True)
     article_id: Mapped[str | None] = mapped_column(ForeignKey("articles.id"))
     model: Mapped[str] = mapped_column(String(150))
     prompt_version: Mapped[str] = mapped_column(String(30))

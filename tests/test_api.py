@@ -159,7 +159,7 @@ def test_manual_story_split_merge_and_honest_coverage(tmp_path):
     assert metrics.status_code == 200
     assert len(metrics.json()["coverage"]["regions"]) == 13
     assert all(region["gap"] for region in metrics.json()["coverage"]["regions"])
-    assert metrics.json()["coverage"]["fixture"] and not metrics.json()["daily_usage"]["cost_available"]
+    assert metrics.json()["coverage"]["fixture"] and metrics.json()["daily_usage"]["cost_available"]
 
 
 def test_human_revision_needs_valid_evidence_and_correction_note(tmp_path):
