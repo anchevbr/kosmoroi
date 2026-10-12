@@ -1,0 +1,72 @@
+{
+  "description": "Entirely fictional October 2026 news fixtures; names of real municipalities are used only to test classification.",
+  "sources": [
+    {"name":"Fictional municipal notice","canonical_domain":"notice.invalid","feed_url":"https://notice.invalid/feed","organization":"Fictional municipal utility"},
+    {"name":"Fictional agency copy","canonical_domain":"agency.invalid","feed_url":"https://agency.invalid/feed","organization":"Fictional agency","syndication_group":"fictional-agency"},
+    {"name":"Fictional agency mirror","canonical_domain":"mirror.invalid","feed_url":"https://mirror.invalid/feed","organization":"Fictional agency mirror","syndication_group":"fictional-agency"}
+  ],
+  "items": [
+    {
+      "source":"Fictional municipal notice",
+      "input":{
+        "url":"https://notice.invalid/water-1010","guid":"notice-one",
+        "title":"Πάτρα: προγραμματισμένη διακοπή νερού σε τρεις δήμους",
+        "published_at":"2026-10-09T05:00:00Z","event_at":"2026-10-10T06:00:00Z","event_until":"2026-10-10T10:00:00Z",
+        "event_type":"water_notice","topic":"services","audience_scope":"local",
+        "text":"Φανταστική ανακοίνωση: Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού στους δήμους Πάτρας, Αιγιαλείας και Δυτικής Αχαΐας.",
+        "claims":[
+          {"text":"Προβλέπεται διακοπή νερού από 09:00 ως 13:00 στις 10 Οκτωβρίου 2026.","excerpt":"Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού","fact_key":"interval","value":"2026-10-10T09:00/13:00"},
+          {"text":"Η ανακοίνωση αφορά τρεις δήμους.","excerpt":"στους δήμους Πάτρας, Αιγιαλείας και Δυτικής Αχαΐας","fact_key":"municipalities","value":"3"}
+        ],
+        "place_hints":[
+          {"name":"Πάτρα","kind":"municipality","role":"affected"},
+          {"name":"Αιγιάλεια","kind":"municipality","role":"affected"},
+          {"name":"Δυτική Αχαΐα","kind":"municipality","role":"affected"},
+          {"name":"Ηράκλειο","kind":"municipality","context":"Αττική","role":"background"}
+        ]
+      }
+    },
+    {
+      "source":"Fictional agency copy",
+      "input":{
+        "url":"https://agency.invalid/water-1010","title":"Πάτρα: προγραμματισμένη διακοπή νερού σε τρεις δήμους",
+        "published_at":"2026-10-09T05:30:00Z","event_at":"2026-10-10T06:00:00Z","event_until":"2026-10-10T10:00:00Z",
+        "event_type":"water_notice","topic":"services","audience_scope":"local",
+        "text":"Φανταστική ανακοίνωση: Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού στους δήμους Πάτρας, Αιγιαλείας και Δυτικής Αχαΐας.",
+        "claims":[{"text":"Προβλέπεται διακοπή νερού από 09:00 ως 13:00 στις 10 Οκτωβρίου 2026.","excerpt":"Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού","fact_key":"interval","value":"2026-10-10T09:00/13:00"}],
+        "place_hints":[{"name":"Πάτρα","kind":"municipality","role":"affected"},{"name":"Αιγιάλεια","kind":"municipality","role":"affected"},{"name":"Δυτική Αχαΐα","kind":"municipality","role":"affected"}]
+      }
+    },
+    {
+      "source":"Fictional agency mirror",
+      "input":{
+        "url":"https://mirror.invalid/water-1010","title":"Πάτρα: προγραμματισμένη διακοπή νερού σε τρεις δήμους",
+        "published_at":"2026-10-09T05:45:00Z","event_at":"2026-10-10T06:00:00Z","event_until":"2026-10-10T10:00:00Z",
+        "event_type":"water_notice","topic":"services","audience_scope":"local",
+        "text":"Φανταστική ανακοίνωση: Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού στους δήμους Πάτρας, Αιγιαλείας και Δυτικής Αχαΐας.",
+        "claims":[{"text":"Προβλέπεται διακοπή νερού από 09:00 ως 13:00 στις 10 Οκτωβρίου 2026.","excerpt":"Στις 10 Οκτωβρίου 2026 από 09:00 ως 13:00 προβλέπεται διακοπή νερού","fact_key":"interval","value":"2026-10-10T09:00/13:00"}],
+        "place_hints":[{"name":"Πάτρα","kind":"municipality","role":"affected"},{"name":"Αιγιάλεια","kind":"municipality","role":"affected"},{"name":"Δυτική Αχαΐα","kind":"municipality","role":"affected"}]
+      }
+    },
+    {
+      "source":"Fictional municipal notice",
+      "input":{
+        "url":"https://notice.invalid/national-brief","title":"Πανελλαδική ενημέρωση για δημοτικές υπηρεσίες",
+        "published_at":"2026-10-09T05:00:00Z","event_type":"announcement","topic":"services","audience_scope":"national",
+        "text":"Φανταστική πανελλαδική ανακοίνωση: Δημοσιεύτηκε ενημέρωση για δημοτικές υπηρεσίες.",
+        "claims":[{"text":"Δημοσιεύτηκε ενημέρωση για δημοτικές υπηρεσίες.","excerpt":"Δημοσιεύτηκε ενημέρωση για δημοτικές υπηρεσίες."}],
+        "place_hints":[]
+      }
+    },
+    {
+      "source":"Fictional municipal notice",
+      "input":{
+        "url":"https://notice.invalid/ambiguous","title":"Ηράκλειο: ανακοίνωση για τις τοπικές υπηρεσίες",
+        "published_at":"2026-10-09T05:00:00Z","event_type":"announcement","topic":"services",
+        "text":"Φανταστική ανακοίνωση για τις τοπικές υπηρεσίες στο Ηράκλειο.",
+        "claims":[{"text":"Υπάρχει ανακοίνωση για τις τοπικές υπηρεσίες.","excerpt":"ανακοίνωση για τις τοπικές υπηρεσίες"}],
+        "place_hints":[{"name":"Ηράκλειο","kind":"municipality","role":"affected"}]
+      }
+    }
+  ]
+}
